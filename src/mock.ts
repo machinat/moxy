@@ -1,10 +1,4 @@
-type Call = {
-  args: Array<any>;
-  value: any;
-  instance: any;
-  isThrow: boolean;
-  isConstructor: boolean;
-};
+import Call from './call';
 
 type MockOptions = {
   accessKey?: string | symbol;
@@ -83,13 +77,7 @@ class Mock {
         const getterMock = mock.getter(propName);
         const implementation = getterMock.getImplementation();
 
-        const call: Call = {
-          args: [],
-          instance: receiver,
-          value: undefined,
-          isThrow: false,
-          isConstructor: false,
-        };
+        const call = new Call({ instance: receiver });
 
         try {
           let property = implementation
@@ -100,10 +88,10 @@ class Mock {
             property = mock.getProxified(property);
           }
 
-          return (call.value = property);
+          return (call.result = property);
         } catch (err) {
           call.isThrow = true;
-          call.value = err;
+          call.result = err;
 
           throw err;
         } finally {
@@ -119,24 +107,18 @@ class Mock {
         const setterMock = mock.setter(propName);
         const implementation = setterMock.getImplementation();
 
-        const call: Call = {
-          args: [value],
-          instance: receiver,
-          value: undefined,
-          isThrow: false,
-          isConstructor: false,
-        };
+        const call = new Call({ args: [value], instance: receiver });
 
         try {
           if (implementation === undefined) {
             return Reflect.set(target, propName, value, receiver);
           }
 
-          call.value = Reflect.apply(implementation, receiver, [value]);
+          call.result = Reflect.apply(implementation, receiver, [value]);
           return true;
         } catch (err) {
           call.isThrow = true;
-          call.value = err;
+          call.result = err;
 
           throw err;
         } finally {
@@ -147,13 +129,7 @@ class Mock {
       construct(target, args, newTarget) {
         const implementation = mock.getImplementation(target);
 
-        const call: Call = {
-          args,
-          instance: undefined,
-          value: undefined,
-          isThrow: false,
-          isConstructor: true,
-        };
+        const call = new Call({ args, isConstructor: true });
 
         try {
           const instance = mock.getProxified(
@@ -163,7 +139,7 @@ class Mock {
           return (call.instance = instance);
         } catch (err) {
           call.isThrow = true;
-          call.value = err;
+          call.result = err;
 
           throw err;
         } finally {
@@ -174,13 +150,7 @@ class Mock {
       apply(target, thisArg, args) {
         const implementation = mock.getImplementation(target);
 
-        const call: Call = {
-          args,
-          instance: thisArg,
-          value: undefined,
-          isThrow: false,
-          isConstructor: false,
-        };
+        const call = new Call({ args, instance: thisArg });
 
         try {
           let result = Reflect.apply(<Function>implementation, thisArg, args);
@@ -189,10 +159,10 @@ class Mock {
             result = this.proxify(result);
           }
 
-          return (call.value = result);
+          return (call.result = result);
         } catch (err) {
           call.isThrow = true;
-          call.value = err;
+          call.result = err;
 
           throw err;
         } finally {

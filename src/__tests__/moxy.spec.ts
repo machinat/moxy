@@ -1,4 +1,5 @@
 import moxy from '../moxy';
+import Call from '../call';
 
 it('is a function', () => {
   expect(typeof moxy).toBe('function');
@@ -49,13 +50,12 @@ describe('empty mock', () => {
 
     expect(spy.mock.calls.length).toBe(5);
 
-    // prettier-ignore
     expect(spy.mock.calls).toEqual([
-      {args: [],             instance: undefined, value: undefined,  isThrow: false, isConstructor: false},
-      {args: ['foo'],        instance: undefined, value: undefined,  isThrow: false, isConstructor: false},
-      {args: ['bar', 'baz'], instance: undefined, value: undefined,  isThrow: false, isConstructor: false},
-      {args: ['hello'],      instance: null,      value: undefined,  isThrow: false, isConstructor: false},
-      {args: ['world'],      instance: {},        value: undefined,  isThrow: false, isConstructor: false},
+      new Call(),
+      new Call({ args: ['foo'] }),
+      new Call({ args: ['bar', 'baz'] }),
+      new Call({ args: ['hello'], instance: null }),
+      new Call({ args: ['world'], instance: {} }),
     ]);
   });
 });
@@ -73,43 +73,19 @@ test('empty mock as an object', () => {
   greeting(spy);
 
   expect(spy.introduce.mock.calls).toEqual([
-    {
-      args: [],
-      value: "I'm James Bond.",
-      instance: spy,
-      isThrow: false,
-      isConstructor: false,
-    },
+    new Call({ result: "I'm James Bond.", instance: spy }),
   ]);
 
   expect(spy.mock.getter('code').calls).toEqual([
-    {
-      args: [],
-      value: 'James Bond',
-      instance: spy,
-      isThrow: false,
-      isConstructor: false,
-    },
+    new Call({ result: 'James Bond', instance: spy }),
   ]);
 
   expect(spy.mock.setter('code').calls).toEqual([
-    {
-      args: ['James Bond'],
-      value: undefined,
-      instance: spy,
-      isThrow: false,
-      isConstructor: false,
-    },
+    new Call({ args: ['James Bond'], instance: spy }),
   ]);
 
   expect(spy.mock.setter('introduce').calls).toEqual([
-    {
-      args: [introduce],
-      value: undefined,
-      instance: spy,
-      isThrow: false,
-      isConstructor: false,
-    },
+    new Call({ args: [introduce], instance: spy }),
   ]);
 });
 
@@ -128,39 +104,23 @@ test('empty mock as a constructor', () => {
   greeting(spy2, 'Anny');
 
   expect(spy1.sayHello.mock.calls).toEqual([
-    {
+    new Call({
       args: ['John'],
-      value: 'hello John',
+      result: 'hello John',
       instance: spy1,
-      isThrow: false,
-      isConstructor: false,
-    },
+    }),
   ]);
 
   expect(spy2.sayHello.mock.calls).toEqual([
-    {
+    new Call({
       args: ['Anny'],
-      value: 'hello Anny',
+      result: 'hello Anny',
       instance: spy2,
-      isThrow: false,
-      isConstructor: false,
-    },
+    }),
   ]);
 
   expect(Spy.mock.calls).toEqual([
-    {
-      args: [1],
-      value: undefined,
-      instance: spy1,
-      isThrow: false,
-      isConstructor: true,
-    },
-    {
-      args: [2],
-      value: undefined,
-      instance: spy2,
-      isThrow: false,
-      isConstructor: true,
-    },
+    new Call({ args: [1], instance: spy1, isConstructor: true }),
+    new Call({ args: [2], instance: spy2, isConstructor: true }),
   ]);
 });
