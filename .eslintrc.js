@@ -5,6 +5,7 @@ module.exports = {
   },
   plugins: [
     'prettier',
+    'typescript',
   ],
   extends: [
     'airbnb-base',
@@ -22,6 +23,7 @@ module.exports = {
       singleQuote: true,
     }],
     'import/extensions': 0,
+    'typescript/no-unused-vars': 'error',
   },
   settings: {
     'import/resolver': {

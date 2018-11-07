@@ -57,6 +57,14 @@ describe('empty mock', () => {
       new Call({ args: ['hello'], instance: null }),
       new Call({ args: ['world'], instance: {} }),
     ]);
+
+    spy.mock.clear();
+    spy.mock.fake((...args) => args.join(' and '));
+
+    expect(spy('foo', 'bar', 'baz')).toBe('foo and bar and baz');
+    expect(spy.mock.calls).toEqual([
+      new Call({ args: ['foo', 'bar', 'baz'], result: 'foo and bar and baz' }),
+    ]);
   });
 });
 
@@ -72,12 +80,17 @@ test('empty mock as an object', () => {
 
   greeting(spy);
 
+  spy.mock.getter('code').fakeReturnValueOnce('007');
+  greeting(spy);
+
   expect(spy.introduce.mock.calls).toEqual([
     new Call({ result: "I'm James Bond.", instance: spy }),
+    new Call({ result: "I'm 007.", instance: spy }),
   ]);
 
   expect(spy.mock.getter('code').calls).toEqual([
     new Call({ result: 'James Bond', instance: spy }),
+    new Call({ result: '007', instance: spy }),
   ]);
 
   expect(spy.mock.setter('code').calls).toEqual([
@@ -93,9 +106,7 @@ test('empty mock as a constructor', () => {
   const greeting = (agent, name) => agent.sayHello(name);
 
   const Spy = moxy();
-  Spy.prototype.sayHello = function(name) {
-    return `hello ${name}`;
-  };
+  Spy.prototype.sayHello = name => `Hello, ${name}.`;
 
   const spy1 = new Spy(1);
   const spy2 = new Spy(2);
@@ -103,21 +114,20 @@ test('empty mock as a constructor', () => {
   greeting(spy1, 'John');
   greeting(spy2, 'Anny');
 
-  expect(spy1.sayHello.mock.calls).toEqual([
-    new Call({
-      args: ['John'],
-      result: 'hello John',
-      instance: spy1,
-    }),
-  ]);
+  spy2.sayHello.mock.fake(name => `Greeting, ${name}.`);
+  greeting(spy2, 'Anny');
 
-  expect(spy2.sayHello.mock.calls).toEqual([
-    new Call({
-      args: ['Anny'],
-      result: 'hello Anny',
-      instance: spy2,
-    }),
-  ]);
+  const expectedCalls = [
+    new Call({ args: ['John'], result: 'Hello, John.', instance: spy1 }),
+    new Call({ args: ['Anny'], result: 'Hello, Anny.', instance: spy2 }),
+    new Call({ args: ['Anny'], result: 'Greeting, Anny.', instance: spy2 }),
+  ];
+
+  expect(spy1.sayHello.mock.calls).toEqual(expectedCalls.slice(0, 1));
+
+  expect(spy2.sayHello.mock.calls).toEqual(expectedCalls.slice(1, 3));
+
+  expect(Spy.prototype.sayHello.mock.calls).toEqual(expectedCalls.slice(0, 2));
 
   expect(Spy.mock.calls).toEqual([
     new Call({ args: [1], instance: spy1, isConstructor: true }),

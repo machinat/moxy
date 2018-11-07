@@ -1,20 +1,30 @@
 import Call from './call';
 
-type MockOptions = {
+export type MockOptions = {
   accessKey?: string | symbol;
 };
 
 type Proxifiable = object | Function;
+// eslint-disable-next-line no-use-before-define
+type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
+// FIXME: wait Microsoft/TypeScript#26797 to support 👆
 
-class Mock {
+const clearAllPropOfMocks = (mapping: PropMockMapping) => {
+  Object.keys(mapping).forEach(k => {
+    mapping[k].clear();
+  });
+};
+
+export default class Mock {
   options: MockOptions;
   calls: Array<Call>;
   proxifiedCache: WeakMap<Proxifiable, Proxifiable>;
-  getterMocks: { [k: string]: Mock };
-  setterMocks: { [k: string]: Mock };
+  getterMocks: PropMockMapping;
+  setterMocks: PropMockMapping;
+  defaultImplementation: Function;
+  impletationQueue: Array<Function>;
 
-  static proxify(target, options = {}) {
-    const mock = new Mock(options);
+  static proxify(target: Proxifiable, mock: Mock) {
     return new Proxy(target, mock.handler());
   }
 
@@ -28,14 +38,19 @@ class Mock {
       ...options,
     };
 
-    this.calls = [];
-    this.proxifiedCache = new WeakMap();
-    this.getterMocks = {};
-    this.setterMocks = {};
+    this.reset();
   }
 
-  getImplementation(defult?: Function) {
-    return defult;
+  getImplementation(target?: Function) {
+    if (this.impletationQueue.length > 0) {
+      return this.impletationQueue.shift();
+    }
+
+    if (this.defaultImplementation !== undefined) {
+      return this.defaultImplementation;
+    }
+
+    return target;
   }
 
   getProxified(target) {
@@ -43,13 +58,14 @@ class Mock {
       return this.proxifiedCache.get(target);
     }
 
-    const proxified = Mock.proxify(target, this.options);
+    const proxified = Mock.proxify(target, new Mock(this.options));
     this.proxifiedCache.set(target, proxified);
 
     return proxified;
   }
 
-  getter(prop) {
+  // FIXME: wait Microsoft/TypeScript#26797 to support👇
+  getter(prop: any /* number | string | symbol */) {
     if (Object.prototype.hasOwnProperty.call(this.getterMocks, prop)) {
       return this.getterMocks[prop];
     }
@@ -57,12 +73,44 @@ class Mock {
     return (this.getterMocks[prop] = new Mock());
   }
 
-  setter(prop) {
+  // FIXME: wait Microsoft/TypeScript#26797 to support👇
+  setter(prop: any /* number | string | symbol */) {
     if (Object.prototype.hasOwnProperty.call(this.setterMocks, prop)) {
       return this.setterMocks[prop];
     }
 
     return (this.setterMocks[prop] = new Mock());
+  }
+
+  clear() {
+    this.calls = [];
+    this.proxifiedCache = new WeakMap();
+    clearAllPropOfMocks(this.getterMocks);
+    clearAllPropOfMocks(this.setterMocks);
+  }
+
+  reset() {
+    this.calls = [];
+    this.proxifiedCache = new WeakMap();
+    this.getterMocks = {};
+    this.setterMocks = {};
+    this.impletationQueue = [];
+  }
+
+  fake(implementation: Function) {
+    this.defaultImplementation = implementation;
+  }
+
+  fakeOnce(implementation: Function) {
+    this.impletationQueue.push(implementation);
+  }
+
+  fakeReturnValue(val: any) {
+    this.fake(() => val);
+  }
+
+  fakeReturnValueOnce(val: any) {
+    this.fakeOnce(() => val);
   }
 
   handler() {
@@ -172,5 +220,3 @@ class Mock {
     };
   }
 }
-
-export default Mock;
