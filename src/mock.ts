@@ -1,13 +1,24 @@
 import Call from './call';
 
-export type MockOptions = {
-  accessKey?: string | symbol;
-};
-
-type Proxifiable = object | Function;
-// eslint-disable-next-line no-use-before-define
+// eslint-disable-next-line typescript/no-use-before-define
 type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
 // FIXME: wait Microsoft/TypeScript#26797 to support 👆
+export type Proxifiable = object | Function;
+
+type ProxyMiddleware = (
+  handler: ProxyHandler<Proxifiable>,
+  mock: Mock
+) => ProxyHandler<Proxifiable>;
+
+export type MockOptions = {
+  accessKey: string | symbol;
+  middlewares: Array<ProxyMiddleware>;
+  proxifyReturnValue: boolean;
+  proxifyNewInstance: boolean;
+  proxifyProperty: boolean;
+};
+
+export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
 
 const clearAllPropOfMocks = (mapping: PropMockMapping) => {
   Object.keys(mapping).forEach(k => {
@@ -15,22 +26,26 @@ const clearAllPropOfMocks = (mapping: PropMockMapping) => {
   });
 };
 
+const isProxifiable = target =>
+  typeof target === 'object' || typeof target === 'function';
+
 export default class Mock {
   options: MockOptions;
-  calls: Array<Call>;
+
+  _calls: Array<Call>;
   proxifiedCache: WeakMap<Proxifiable, Proxifiable>;
   getterMocks: PropMockMapping;
   setterMocks: PropMockMapping;
   defaultImplementation: Function;
   impletationQueue: Array<Function>;
 
-  static proxify(target: Proxifiable, mock: Mock) {
-    return new Proxy(target, mock.handler());
-  }
-
-  constructor(options: MockOptions = {}) {
+  constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
       accessKey: 'mock',
+      middlewares: [],
+      proxifyReturnValue: true,
+      proxifyNewInstance: true,
+      proxifyProperty: true,
     };
 
     this.options = {
@@ -41,27 +56,14 @@ export default class Mock {
     this.reset();
   }
 
-  getImplementation(target?: Function) {
-    if (this.impletationQueue.length > 0) {
-      return this.impletationQueue.shift();
-    }
-
-    if (this.defaultImplementation !== undefined) {
-      return this.defaultImplementation;
-    }
-
-    return target;
+  get calls() {
+    // NOTE: returns a copy of _calls to prevent it keeps growing while deeply
+    //       comparing the calls which might traverse through the moxied object
+    return [...this._calls];
   }
 
-  getProxified(target) {
-    if (this.proxifiedCache.has(target)) {
-      return this.proxifiedCache.get(target);
-    }
-
-    const proxified = Mock.proxify(target, new Mock(this.options));
-    this.proxifiedCache.set(target, proxified);
-
-    return proxified;
+  proxify(target: Proxifiable): any {
+    return new Proxy(target, this.handle());
   }
 
   // FIXME: wait Microsoft/TypeScript#26797 to support👇
@@ -83,18 +85,19 @@ export default class Mock {
   }
 
   clear() {
-    this.calls = [];
+    this._calls = [];
     this.proxifiedCache = new WeakMap();
     clearAllPropOfMocks(this.getterMocks);
     clearAllPropOfMocks(this.setterMocks);
   }
 
   reset() {
-    this.calls = [];
+    this._calls = [];
     this.proxifiedCache = new WeakMap();
     this.getterMocks = {};
     this.setterMocks = {};
     this.impletationQueue = [];
+    this.defaultImplementation = undefined;
   }
 
   fake(implementation: Function) {
@@ -113,16 +116,39 @@ export default class Mock {
     this.fakeOnce(() => val);
   }
 
-  handler() {
-    const mock = this;
+  getImplementation(target?: Function) {
+    if (this.impletationQueue.length > 0) {
+      return this.impletationQueue.shift();
+    }
 
-    return {
-      get(target, propName, receiver) {
-        if (propName === mock.options.accessKey) {
-          return mock;
+    if (this.defaultImplementation !== undefined) {
+      return this.defaultImplementation;
+    }
+
+    return target;
+  }
+
+  getProxified(target) {
+    if (this.proxifiedCache.has(target)) {
+      return this.proxifiedCache.get(target);
+    }
+
+    const childMock = new Mock(this.options);
+
+    const proxified = childMock.proxify(target);
+    this.proxifiedCache.set(target, proxified);
+
+    return proxified;
+  }
+
+  handle(): ProxyHandler<Proxifiable> {
+    const baseHandler: ProxyHandler<Proxifiable> = {
+      get: (target, propName, receiver) => {
+        if (propName === this.options.accessKey) {
+          return this;
         }
 
-        const getterMock = mock.getter(propName);
+        const getterMock = this.getter(propName);
         const implementation = getterMock.getImplementation();
 
         const call = new Call({ instance: receiver });
@@ -132,8 +158,8 @@ export default class Mock {
             ? Reflect.apply(implementation, receiver, [])
             : Reflect.get(target, propName, receiver);
 
-          if (typeof property === 'object' || typeof property === 'function') {
-            property = mock.getProxified(property);
+          if (this.options.proxifyProperty && isProxifiable(property)) {
+            property = this.getProxified(property);
           }
 
           return (call.result = property);
@@ -143,16 +169,16 @@ export default class Mock {
 
           throw err;
         } finally {
-          getterMock.calls.push(call);
+          getterMock._calls.push(call);
         }
       },
 
-      set(target, propName, value, receiver) {
-        if (propName === mock.options.accessKey) {
+      set: (target, propName, value, receiver) => {
+        if (propName === this.options.accessKey) {
           return false;
         }
 
-        const setterMock = mock.setter(propName);
+        const setterMock = this.setter(propName);
         const implementation = setterMock.getImplementation();
 
         const call = new Call({ args: [value], instance: receiver });
@@ -170,19 +196,21 @@ export default class Mock {
 
           throw err;
         } finally {
-          setterMock.calls.push(call);
+          setterMock._calls.push(call);
         }
       },
 
-      construct(target, args, newTarget) {
-        const implementation = mock.getImplementation(target);
+      construct: (target: Function, args, newTarget) => {
+        const implementation = this.getImplementation(target);
 
         const call = new Call({ args, isConstructor: true });
 
         try {
-          const instance = mock.getProxified(
-            Reflect.construct(implementation, args, newTarget)
-          );
+          let instance = Reflect.construct(implementation, args, newTarget);
+
+          if (this.options.proxifyNewInstance) {
+            instance = this.getProxified(instance);
+          }
 
           return (call.instance = instance);
         } catch (err) {
@@ -191,20 +219,20 @@ export default class Mock {
 
           throw err;
         } finally {
-          mock.calls.push(call);
+          this._calls.push(call);
         }
       },
 
-      apply(target, thisArg, args) {
-        const implementation = mock.getImplementation(target);
+      apply: (target: Function, thisArg, args) => {
+        const implementation = this.getImplementation(target);
 
         const call = new Call({ args, instance: thisArg });
 
         try {
           let result = Reflect.apply(<Function>implementation, thisArg, args);
 
-          if (typeof result === 'object' || typeof result === 'function') {
-            result = this.proxify(result);
+          if (this.options.proxifyReturnValue && isProxifiable(result)) {
+            result = this.getProxified(result);
           }
 
           return (call.result = result);
@@ -214,9 +242,14 @@ export default class Mock {
 
           throw err;
         } finally {
-          mock.calls.push(call);
+          this._calls.push(call);
         }
       },
     };
+
+    return this.options.middlewares.reduce(
+      (wrappedHandler, wrapper) => wrapper(wrappedHandler, this),
+      baseHandler
+    );
   }
 }

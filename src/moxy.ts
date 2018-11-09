@@ -1,15 +1,15 @@
-import Mock, { MockOptions } from './mock';
+import Mock, { MockOptionsInput } from './mock';
 
 function empty() {}
 
-function moxy(target?: object | Function, options?: MockOptions): any {
+function moxy(target?: object | Function, options?: MockOptionsInput): any {
   const mock = new Mock(options);
 
   if (target === undefined) {
-    return Mock.proxify(empty, mock);
+    return mock.proxify(empty);
   }
 
-  return Mock.proxify(target, mock);
+  return mock.proxify(target);
 }
 
 export default moxy;

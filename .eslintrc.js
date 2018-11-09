@@ -18,12 +18,17 @@ module.exports = {
     'lines-between-class-members': ['error', 'always', {
       exceptAfterSingleLine: true,
     }],
+    'prefer-arrow-callback': 0,
     'prettier/prettier': ['error', {
       trailingComma: 'es5',
       singleQuote: true,
     }],
     'import/extensions': 0,
     'typescript/no-unused-vars': 'error',
+    'no-use-before-define': 0,
+    'typescript/no-use-before-define': ['error', {
+      typedefs: false,
+    }],
   },
   settings: {
     'import/resolver': {

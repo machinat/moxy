@@ -1,4 +1,4 @@
-interface CallObj {
+interface CallInput {
   args?: Array<any>;
   result?: any;
   instance?: any;
@@ -19,7 +19,7 @@ export default class Call {
     instance,
     isThrow = false,
     isConstructor = false,
-  }: CallObj = {}) {
+  }: CallInput = {}) {
     this.args = args;
     this.result = result;
     this.instance = instance;
