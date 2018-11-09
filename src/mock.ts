@@ -12,10 +12,12 @@ type ProxyMiddleware = (
 
 export type MockOptions = {
   accessKey: string | symbol;
-  middlewares: Array<ProxyMiddleware>;
+  middlewares?: Array<ProxyMiddleware>;
   proxifyReturnValue: boolean;
   proxifyNewInstance: boolean;
-  proxifyProperty: boolean;
+  proxifyProperties: boolean;
+  includeProperties?: Array<string | symbol>;
+  excludeProperties?: Array<string | symbol>;
 };
 
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
@@ -42,10 +44,12 @@ export default class Mock {
   constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
       accessKey: 'mock',
-      middlewares: [],
+      middlewares: null,
       proxifyReturnValue: true,
       proxifyNewInstance: true,
-      proxifyProperty: true,
+      proxifyProperties: true,
+      includeProperties: null,
+      excludeProperties: null,
     };
 
     this.options = {
@@ -116,31 +120,6 @@ export default class Mock {
     this.fakeOnce(() => val);
   }
 
-  getImplementation(target?: Function) {
-    if (this.impletationQueue.length > 0) {
-      return this.impletationQueue.shift();
-    }
-
-    if (this.defaultImplementation !== undefined) {
-      return this.defaultImplementation;
-    }
-
-    return target;
-  }
-
-  getProxified(target) {
-    if (this.proxifiedCache.has(target)) {
-      return this.proxifiedCache.get(target);
-    }
-
-    const childMock = new Mock(this.options);
-
-    const proxified = childMock.proxify(target);
-    this.proxifiedCache.set(target, proxified);
-
-    return proxified;
-  }
-
   handle(): ProxyHandler<Proxifiable> {
     const baseHandler: ProxyHandler<Proxifiable> = {
       get: (target, propName, receiver) => {
@@ -149,7 +128,7 @@ export default class Mock {
         }
 
         const getterMock = this.getter(propName);
-        const implementation = getterMock.getImplementation();
+        const implementation = getterMock._getImplementation();
 
         const call = new Call({ instance: receiver });
 
@@ -158,8 +137,8 @@ export default class Mock {
             ? Reflect.apply(implementation, receiver, [])
             : Reflect.get(target, propName, receiver);
 
-          if (this.options.proxifyProperty && isProxifiable(property)) {
-            property = this.getProxified(property);
+          if (this._shouldProxifyProp(propName) && isProxifiable(property)) {
+            property = this._getProxified(property);
           }
 
           return (call.result = property);
@@ -179,7 +158,7 @@ export default class Mock {
         }
 
         const setterMock = this.setter(propName);
-        const implementation = setterMock.getImplementation();
+        const implementation = setterMock._getImplementation();
 
         const call = new Call({ args: [value], instance: receiver });
 
@@ -201,7 +180,7 @@ export default class Mock {
       },
 
       construct: (target: Function, args, newTarget) => {
-        const implementation = this.getImplementation(target);
+        const implementation = this._getImplementation(target);
 
         const call = new Call({ args, isConstructor: true });
 
@@ -209,7 +188,7 @@ export default class Mock {
           let instance = Reflect.construct(implementation, args, newTarget);
 
           if (this.options.proxifyNewInstance) {
-            instance = this.getProxified(instance);
+            instance = this._getProxified(instance);
           }
 
           return (call.instance = instance);
@@ -224,7 +203,7 @@ export default class Mock {
       },
 
       apply: (target: Function, thisArg, args) => {
-        const implementation = this.getImplementation(target);
+        const implementation = this._getImplementation(target);
 
         const call = new Call({ args, instance: thisArg });
 
@@ -232,7 +211,7 @@ export default class Mock {
           let result = Reflect.apply(<Function>implementation, thisArg, args);
 
           if (this.options.proxifyReturnValue && isProxifiable(result)) {
-            result = this.getProxified(result);
+            result = this._getProxified(result);
           }
 
           return (call.result = result);
@@ -247,9 +226,48 @@ export default class Mock {
       },
     };
 
-    return this.options.middlewares.reduce(
-      (wrappedHandler, wrapper) => wrapper(wrappedHandler, this),
-      baseHandler
+    return this.options.middlewares
+      ? this.options.middlewares.reduce(
+          (wrappedHandler, wrapper) => wrapper(wrappedHandler, this),
+          baseHandler
+        )
+      : baseHandler;
+  }
+
+  _getProxified(target) {
+    if (this.proxifiedCache.has(target)) {
+      return this.proxifiedCache.get(target);
+    }
+
+    const childMock = new Mock(this.options);
+
+    const proxified = childMock.proxify(target);
+    this.proxifiedCache.set(target, proxified);
+
+    return proxified;
+  }
+
+  _shouldProxifyProp(name) {
+    const { options } = this;
+    if (!options.proxifyProperties) return false;
+
+    if (options.excludeProperties && options.excludeProperties.includes(name))
+      return false;
+
+    return (
+      !options.includeProperties || options.includeProperties.includes(name)
     );
+  }
+
+  _getImplementation(target?: Function) {
+    if (this.impletationQueue.length > 0) {
+      return this.impletationQueue.shift();
+    }
+
+    if (this.defaultImplementation !== undefined) {
+      return this.defaultImplementation;
+    }
+
+    return target;
   }
 }

@@ -9,6 +9,57 @@ it('is a constructor', () => {
   expect(() => new Mock()).not.toThrow();
 });
 
+describe('#constructor(options)', () => {
+  it('configures options with default value', () => {
+    expect(new Mock().options).toEqual({
+      accessKey: 'mock',
+      middlewares: null,
+      proxifyReturnValue: true,
+      proxifyNewInstance: true,
+      proxifyProperties: true,
+      includeProperties: null,
+      excludeProperties: null,
+    });
+
+    const fullOptions = {
+      accessKey: 'MOCK',
+      middlewares: [handler => handler],
+      proxifyReturnValue: false,
+      proxifyNewInstance: false,
+      proxifyProperties: false,
+      includeProperties: ['foo'],
+      excludeProperties: ['bar'],
+    };
+    expect(new Mock(fullOptions).options).toEqual(fullOptions);
+
+    expect(
+      new Mock({
+        accessKey: 'moooock',
+        proxifyReturnValue: false,
+        includeProperties: ['foo', 'bar'],
+      }).options
+    ).toEqual({
+      accessKey: 'moooock',
+      middlewares: null,
+      proxifyReturnValue: false,
+      proxifyNewInstance: true,
+      proxifyProperties: true,
+      includeProperties: ['foo', 'bar'],
+      excludeProperties: null,
+    });
+  });
+
+  it('initiate basic props', () => {
+    const mock = new Mock();
+
+    expect(mock.calls).toEqual([]);
+    expect(mock.impletationQueue).toEqual([]);
+    expect(mock.proxifiedCache).toBeInstanceOf(WeakMap);
+    expect(mock.setterMocks).toEqual({});
+    expect(mock.getterMocks).toEqual({});
+  });
+});
+
 describe('#poxify(target, mock)', () => {
   const _Proxy = global.Proxy;
 
@@ -16,19 +67,19 @@ describe('#poxify(target, mock)', () => {
     global.Proxy = _Proxy;
   });
 
-  xit('returns new Proxy(target, mock.handle())', () => {
+  it('returns new Proxy(target, mock.handle())', () => {
     const target = () => {};
 
     const handler = { apply() {} };
     const mockInstance = moxy(new Mock(), {
       proxifyReturnValue: false,
-      proxifyProperty: false,
+      includeProperties: ['handle'],
     });
     mockInstance.handle.mock.fakeReturnValueOnce(handler);
 
     global.Proxy = moxy(class {}, {
       proxifyNewInstance: false,
-      proxifyProperty: false,
+      proxifyProperties: false,
     });
 
     const proxied = mockInstance.proxify(target);
@@ -47,47 +98,6 @@ describe('#poxify(target, mock)', () => {
   });
 });
 
-describe('#constructor(options)', () => {
-  it('configures options with default value', () => {
-    expect(new Mock().options).toEqual({
-      accessKey: 'mock',
-      middlewares: [],
-      proxifyReturnValue: true,
-      proxifyNewInstance: true,
-      proxifyProperty: true,
-    });
-
-    const fullOptions = {
-      accessKey: 'MOCK',
-      middlewares: [handler => handler],
-      proxifyReturnValue: false,
-      proxifyNewInstance: false,
-      proxifyProperty: false,
-    };
-    expect(new Mock(fullOptions).options).toEqual(fullOptions);
-
-    expect(
-      new Mock({ accessKey: 'moooock', proxifyReturnValue: false }).options
-    ).toEqual({
-      accessKey: 'moooock',
-      middlewares: [],
-      proxifyReturnValue: false,
-      proxifyNewInstance: true,
-      proxifyProperty: true,
-    });
-  });
-
-  it('initiate basic props', () => {
-    const mock = new Mock();
-
-    expect(mock.calls).toEqual([]);
-    expect(mock.impletationQueue).toEqual([]);
-    expect(mock.proxifiedCache).toBeInstanceOf(WeakMap);
-    expect(mock.setterMocks).toEqual({});
-    expect(mock.getterMocks).toEqual({});
-  });
-});
-
 describe('#calls()', () => {
   it('returns a copy of _call', () => {
     const mock = new Mock();
@@ -103,57 +113,52 @@ describe('#calls()', () => {
 });
 
 describe(`Faking implementation
-  #getImplementation(target)
   #fake(impl)
   #fakeOnce(impl)
   #fakeReturnValue(val)
   #fakeReturnValueOnce(val)
 `, () => {
-  test('#getImplementation() returns undefined if not faked and no target', () => {
+  it('invoke original target if not faked', () => {
     const mock = new Mock();
-    expect(mock.getImplementation()).toBe(undefined);
+    const moxied = mock.proxify(() => 0);
+
+    expect(moxied()).toBe(0);
   });
 
-  test('#getImplementation() returns target if not faked', () => {
+  test('invoke faked implementation if #fake(impl)', () => {
     const mock = new Mock();
-    const target = () => {};
+    const moxied = mock.proxify(() => 0);
 
-    expect(mock.getImplementation(target)).toBe(target);
-  });
+    const faked = () => 1;
+    mock.fake(faked);
 
-  test('#getImplementation() retruns impl of #fake(impl)', () => {
-    const mock = new Mock();
-    const origin = () => {};
-    const faking = () => {};
-
-    mock.fake(faking);
-    expect(mock.getImplementation(origin)).toBe(faking);
-    expect(mock.getImplementation(origin)).toBe(faking);
+    expect(moxied()).toBe(1);
+    expect(moxied()).toBe(1);
 
     mock.reset();
-    expect(mock.getImplementation(origin)).toBe(origin);
+    expect(moxied()).toBe(0);
   });
 
-  test('#getImplementation() retruns impl of #fakeOnce(impl) only once', () => {
+  test('invoke fake implementation from #fakeOnce(impl) only once', () => {
     const mock = new Mock();
-    const origin = () => {};
-    const faking = () => {};
-    const faking1 = () => {};
-    const faking2 = () => {};
+    const moxied = mock.proxify(() => 0);
+    const faked = () => 1;
+    const faked1 = () => 2;
+    const faked2 = () => 3;
 
-    mock.fakeOnce(faking);
-    expect(mock.getImplementation(origin)).toBe(faking);
-    expect(mock.getImplementation(origin)).toBe(origin);
+    mock.fakeOnce(faked);
+    expect(moxied()).toBe(1);
+    expect(moxied()).toBe(0);
 
-    mock.fake(faking);
-    mock.fakeOnce(faking1);
-    mock.fakeOnce(faking2);
-    expect(mock.getImplementation(origin)).toBe(faking1);
-    expect(mock.getImplementation(origin)).toBe(faking2);
-    expect(mock.getImplementation(origin)).toBe(faking);
+    mock.fake(faked);
+    mock.fakeOnce(faked1);
+    mock.fakeOnce(faked2);
+    expect(moxied()).toBe(2);
+    expect(moxied()).toBe(3);
+    expect(moxied()).toBe(1);
 
     mock.reset();
-    expect(mock.getImplementation(origin)).toBe(origin);
+    expect(moxied()).toBe(0);
   });
 
   test('#fakeReturnValue(val) is equivelant to #fake(() => val)', () => {
