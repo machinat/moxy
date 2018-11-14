@@ -59,7 +59,7 @@ describe('#constructor(options)', () => {
   });
 });
 
-describe('#poxify(source, mock)', () => {
+describe('#proxify(source, mock)', () => {
   const _Proxy = global.Proxy;
 
   afterEach(() => {
@@ -86,8 +86,8 @@ describe('#poxify(source, mock)', () => {
     const moxiedObj = mockInstance.proxify(obj);
 
     expect(mockInstance.handle.mock.calls).toEqual([
-      new Call({ instance: mockInstance, result: handler }),
-      new Call({ instance: mockInstance, result: handler }),
+      new Call({ args: [fn], instance: mockInstance, result: handler }),
+      new Call({ args: [obj], instance: mockInstance, result: handler }),
     ]);
 
     expect(global.Proxy.mock.calls.length).toBe(2);
@@ -362,6 +362,63 @@ describe('#reset()', () => {
 });
 
 describe('#handle()', () => {
+  it('returns a proxy handler', () => {
+    const mock = new Mock();
+    const handler = mock.handle({});
+
+    expect(typeof handler).toBe('object');
+    expect('set' in handler).toBe(true);
+    expect('get' in handler).toBe(true);
+    expect('apply' in handler).toBe(true);
+    expect('construct' in handler).toBe(true);
+  });
+
+  it('compose the final hander with all options.middlewares', () => {
+    const copy = x => Object.assign({}, x);
+    const middlewares = [moxy(copy), moxy(copy), moxy(copy)];
+
+    const mock = new Mock({ middlewares });
+
+    const source = {};
+    const handler = mock.handle(source);
+
+    expect(middlewares[0].mock.calls.length).toBe(1);
+    expect(middlewares[1].mock.calls.length).toBe(1);
+    expect(middlewares[2].mock.calls.length).toBe(1);
+
+    const middleware1Call = middlewares[0].mock.calls[0];
+    expect(typeof middleware1Call.args[0]).toBe('object');
+    expect(middleware1Call.args[1]).toBe(source);
+    expect(middleware1Call.args[2]).toBe(mock);
+
+    const middleware2Call = middlewares[1].mock.calls[0];
+    expect(middleware2Call.args[0]).toBe(middleware1Call.result);
+    expect(middleware2Call.args[1]).toBe(source);
+    expect(middleware2Call.args[2]).toBe(mock);
+
+    const middleware3Call = middlewares[2].mock.calls[0];
+    expect(middleware3Call.args[0]).toBe(middleware2Call.result);
+    expect(middleware3Call.args[1]).toBe(source);
+    expect(middleware3Call.args[2]).toBe(mock);
+
+    expect(handler).toBe(middleware3Call.result);
+  });
+
+  it('throw if original method lost in middleware result', () => {
+    const methodsShoudContain = Object.keys(new Mock().handle({}));
+
+    methodsShoudContain.forEach(method => {
+      const middleware = handler => {
+        const incomplete = Object.assign({}, handler);
+        delete incomplete[method];
+        return incomplete;
+      };
+
+      const mock = new Mock({ middlewares: [middleware] });
+      expect(() => mock.handle({})).toThrow();
+    });
+  });
+
   describe('handler.get()', () => {
     it('returns the mock itself if getting options.accessKey', () => {
       const mock1 = new Mock();
@@ -579,11 +636,11 @@ describe('#handle()', () => {
 
       const setFooMock = mock.setter('foo');
 
-      setFooMock.fake(function(val) {
+      setFooMock.fake(function f1(val) {
         this._foo = (this._foo || '') + val;
       });
 
-      setFooMock.fakeOnce(function(val) {
+      setFooMock.fakeOnce(function f2(val) {
         this._foo = (this._foo || '') + val + val;
       });
 
@@ -650,7 +707,7 @@ describe('#handle()', () => {
 
       expect(new MoxiedFoo()).toEqual({ bar: 'bar' });
 
-      MoxiedFoo.mock.fake(function() {
+      MoxiedFoo.mock.fake(function f() {
         this.faked = true;
       });
       expect(new MoxiedFoo()).toEqual({ faked: true });
@@ -672,7 +729,7 @@ describe('#handle()', () => {
       expect(() => new MoxiedFoo()).toThrow('bad instance!');
       expect(() => new MoxiedFoo("i'm good")).toThrow('bad instance!');
 
-      MoxiedFoo.mock.fake(function() {
+      MoxiedFoo.mock.fake(function f() {
         throw new Error('really bad instance!');
       });
       expect(() => new MoxiedFoo()).toThrow('really bad instance!');
@@ -730,7 +787,7 @@ describe('#handle()', () => {
         new Call({ result: 'baz', instance: foo1 }),
       ]);
 
-      mock.fake(function() {
+      mock.fake(function f() {
         this.faked = true;
       });
 

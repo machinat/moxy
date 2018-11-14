@@ -7,6 +7,7 @@ export type Proxifiable = object | Function;
 
 type ProxyMiddleware = (
   handler: ProxyHandler<Proxifiable>,
+  source: Proxifiable,
   mock: Mock
 ) => ProxyHandler<Proxifiable>;
 
@@ -21,6 +22,9 @@ export type MockOptions = {
 };
 
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
+
+const createProxyTargetDouble = source =>
+  typeof source === 'function' ? function double() {} : Object.create(null);
 
 const clearAllPropOfMocks = (mapping: PropMockMapping) => {
   Object.keys(mapping).forEach(k => {
@@ -80,8 +84,8 @@ export default class Mock {
       );
     }
 
-    const target = this._registerSource(source);
-    return new Proxy(target, this.handle());
+    const target = createProxyTargetDouble(source);
+    return new Proxy(target, this.handle(source));
   }
 
   // FIXME: wait Microsoft/TypeScript#26797 to support👇
@@ -136,14 +140,39 @@ export default class Mock {
     this.fakeOnce(() => val);
   }
 
-  handle(): ProxyHandler<Proxifiable> {
-    const baseHandler: ProxyHandler<Proxifiable> = {
+  handle(source: Proxifiable): ProxyHandler<Proxifiable> {
+    const baseHandler = this._createBaseHandler(source);
+
+    const requiredHandlerMethods = Object.keys(baseHandler);
+
+    if (this.options.middlewares) {
+      return this.options.middlewares.reduce((wrappedHandler, wrapper) => {
+        const handler = wrapper(wrappedHandler, source, this);
+
+        const lostMethod = requiredHandlerMethods.find(
+          method => !(method in handler)
+        );
+
+        if (lostMethod !== undefined) {
+          throw TypeError(
+            `handler.${lostMethod}() is required but lost in result of middleware ${wrapper.name ||
+              wrapper}`
+          );
+        }
+
+        return handler;
+      }, baseHandler);
+    }
+
+    return baseHandler;
+  }
+
+  _createBaseHandler(source: Proxifiable): ProxyHandler<Proxifiable> {
+    return {
       get: (target, propName, receiver) => {
         if (propName === this.options.accessKey) {
           return this;
         }
-
-        const source = this._getSource(target);
 
         const getterMock = this.getter(propName);
         const implementation = getterMock._getImplementation();
@@ -205,8 +234,8 @@ export default class Mock {
         }
       },
 
-      construct: this._mapTargetToSource((source, args, newTarget) => {
-        const implementation = this._getImplementation(source);
+      construct: (target, args, newTarget) => {
+        const implementation = this._getImplementation(<Function>source);
 
         const call = new Call({ args, isConstructor: true });
 
@@ -226,10 +255,10 @@ export default class Mock {
         } finally {
           this._calls.push(call);
         }
-      }),
+      },
 
-      apply: this._mapTargetToSource((source, thisArg, args) => {
-        const implementation = this._getImplementation(source);
+      apply: (target, thisArg, args) => {
+        const implementation = this._getImplementation(<Function>source);
 
         const call = new Call({ args, instance: thisArg });
 
@@ -249,36 +278,22 @@ export default class Mock {
         } finally {
           this._calls.push(call);
         }
-      }),
+      },
 
       getOwnPropertyDescriptor: (target, prop) =>
         Reflect.getOwnPropertyDescriptor(target, prop) ||
-        Reflect.getOwnPropertyDescriptor(this._getSource(target), prop),
+        Reflect.getOwnPropertyDescriptor(source, prop),
 
-      getPrototypeOf: target => {
-        const source = this._getSource(target);
-
-        return (
-          (typeof source === 'object' && Reflect.getPrototypeOf(target)) ||
-          Reflect.getPrototypeOf(source)
-        );
-      },
+      getPrototypeOf: target =>
+        (typeof source === 'object' && Reflect.getPrototypeOf(target)) ||
+        Reflect.getPrototypeOf(source),
 
       has: (target, prop) =>
-        Reflect.has(target, prop) || Reflect.has(this._getSource(target), prop),
+        Reflect.has(target, prop) || Reflect.has(source, prop),
 
-      ownKeys: target => {
-        const source = this._getSource(target);
-        return Reflect.ownKeys(target).concat(Reflect.ownKeys(source));
-      },
+      ownKeys: target =>
+        Reflect.ownKeys(target).concat(Reflect.ownKeys(source)),
     };
-
-    return this.options.middlewares
-      ? this.options.middlewares.reduce(
-          (wrappedHandler, wrapper) => wrapper(wrappedHandler, this),
-          baseHandler
-        )
-      : baseHandler;
   }
 
   _getProxified(target) {
@@ -329,24 +344,5 @@ export default class Mock {
     }
 
     return target;
-  }
-
-  _registerSource(source: Proxifiable) {
-    const target =
-      typeof source === 'function' ? function double() {} : Object.create(null);
-
-    this._targetSourceMapping.set(target, source);
-    return target;
-  }
-
-  _getSource(target) {
-    return this._targetSourceMapping.get(target);
-  }
-
-  _mapTargetToSource(fn) {
-    return (target, ...restArgs) => {
-      const source = this._getSource(target);
-      return fn(source, ...restArgs);
-    };
   }
 }
