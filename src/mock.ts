@@ -29,13 +29,19 @@ const clearAllPropOfMocks = (mapping: PropMockMapping) => {
 };
 
 const isProxifiable = target =>
-  typeof target === 'object' || typeof target === 'function';
+  (typeof target === 'object' && target !== null) ||
+  typeof target === 'function';
+
+const isFunctionProp = (source, propName) =>
+  typeof source === 'function' &&
+  (propName === 'prototype' || propName === 'name' || propName === 'length');
 
 export default class Mock {
   options: MockOptions;
 
   _calls: Array<Call>;
-  proxifiedCache: WeakMap<Proxifiable, Proxifiable>;
+  _targetSourceMapping: WeakMap<Proxifiable, Proxifiable>;
+  _proxifiedValueCache: WeakMap<Proxifiable, Proxifiable>;
   getterMocks: PropMockMapping;
   setterMocks: PropMockMapping;
   defaultImplementation: Function;
@@ -58,6 +64,7 @@ export default class Mock {
     };
 
     this.reset();
+    this._targetSourceMapping = new WeakMap();
   }
 
   get calls() {
@@ -66,7 +73,14 @@ export default class Mock {
     return [...this._calls];
   }
 
-  proxify(target: Proxifiable): any {
+  proxify(source: Proxifiable): any {
+    if (!isProxifiable(source)) {
+      throw new TypeError(
+        'Cannot create proxy with a non-object as target or handler'
+      );
+    }
+
+    const target = this._registerSource(source);
     return new Proxy(target, this.handle());
   }
 
@@ -89,15 +103,17 @@ export default class Mock {
   }
 
   clear() {
-    this._calls = [];
-    this.proxifiedCache = new WeakMap();
+    this._initCalls();
+
+    this._proxifiedValueCache = new WeakMap();
     clearAllPropOfMocks(this.getterMocks);
     clearAllPropOfMocks(this.setterMocks);
   }
 
   reset() {
-    this._calls = [];
-    this.proxifiedCache = new WeakMap();
+    this._initCalls();
+
+    this._proxifiedValueCache = new WeakMap();
     this.getterMocks = {};
     this.setterMocks = {};
     this.impletationQueue = [];
@@ -127,17 +143,27 @@ export default class Mock {
           return this;
         }
 
+        const source = this._getSource(target);
+
         const getterMock = this.getter(propName);
         const implementation = getterMock._getImplementation();
 
         const call = new Call({ instance: receiver });
 
+        const shouldReturnNativeProp = isFunctionProp(source, propName);
         try {
           let property = implementation
             ? Reflect.apply(implementation, receiver, [])
-            : Reflect.get(target, propName, receiver);
+            : Reflect.get(
+                !shouldReturnNativeProp && propName in target ? target : source,
+                propName
+              );
 
-          if (this._shouldProxifyProp(propName) && isProxifiable(property)) {
+          if (
+            this._shouldProxifyProp(propName) &&
+            !shouldReturnNativeProp &&
+            isProxifiable(property)
+          ) {
             property = this._getProxified(property);
           }
 
@@ -164,7 +190,7 @@ export default class Mock {
 
         try {
           if (implementation === undefined) {
-            return Reflect.set(target, propName, value, receiver);
+            return Reflect.set(target, propName, value);
           }
 
           call.result = Reflect.apply(implementation, receiver, [value]);
@@ -179,8 +205,8 @@ export default class Mock {
         }
       },
 
-      construct: (target: Function, args, newTarget) => {
-        const implementation = this._getImplementation(target);
+      construct: this._mapTargetToSource((source, args, newTarget) => {
+        const implementation = this._getImplementation(source);
 
         const call = new Call({ args, isConstructor: true });
 
@@ -200,10 +226,10 @@ export default class Mock {
         } finally {
           this._calls.push(call);
         }
-      },
+      }),
 
-      apply: (target: Function, thisArg, args) => {
-        const implementation = this._getImplementation(target);
+      apply: this._mapTargetToSource((source, thisArg, args) => {
+        const implementation = this._getImplementation(source);
 
         const call = new Call({ args, instance: thisArg });
 
@@ -223,6 +249,27 @@ export default class Mock {
         } finally {
           this._calls.push(call);
         }
+      }),
+
+      getOwnPropertyDescriptor: (target, prop) =>
+        Reflect.getOwnPropertyDescriptor(target, prop) ||
+        Reflect.getOwnPropertyDescriptor(this._getSource(target), prop),
+
+      getPrototypeOf: target => {
+        const source = this._getSource(target);
+
+        return (
+          (typeof source === 'object' && Reflect.getPrototypeOf(target)) ||
+          Reflect.getPrototypeOf(source)
+        );
+      },
+
+      has: (target, prop) =>
+        Reflect.has(target, prop) || Reflect.has(this._getSource(target), prop),
+
+      ownKeys: target => {
+        const source = this._getSource(target);
+        return Reflect.ownKeys(target).concat(Reflect.ownKeys(source));
       },
     };
 
@@ -235,25 +282,38 @@ export default class Mock {
   }
 
   _getProxified(target) {
-    if (this.proxifiedCache.has(target)) {
-      return this.proxifiedCache.get(target);
+    if (this._proxifiedValueCache.has(target)) {
+      return this._proxifiedValueCache.get(target);
     }
 
     const childMock = new Mock(this.options);
 
     const proxified = childMock.proxify(target);
-    this.proxifiedCache.set(target, proxified);
+    this._proxifiedValueCache.set(target, proxified);
 
     return proxified;
   }
 
+  _initCalls() {
+    // NOTE: to prevent infinity loops caused by _calls growing while deeply comparing mocks
+    Object.defineProperties(this, {
+      _calls: {
+        enumerable: false,
+        configurable: true,
+        writable: false,
+        value: [],
+      },
+    });
+  }
+
   _shouldProxifyProp(name) {
     const { options } = this;
-    if (!options.proxifyProperties) return false;
-
-    if (options.excludeProperties && options.excludeProperties.includes(name))
+    if (
+      !options.proxifyProperties ||
+      (options.excludeProperties && options.excludeProperties.includes(name))
+    ) {
       return false;
-
+    }
     return (
       !options.includeProperties || options.includeProperties.includes(name)
     );
@@ -269,5 +329,24 @@ export default class Mock {
     }
 
     return target;
+  }
+
+  _registerSource(source: Proxifiable) {
+    const target =
+      typeof source === 'function' ? function double() {} : Object.create(null);
+
+    this._targetSourceMapping.set(target, source);
+    return target;
+  }
+
+  _getSource(target) {
+    return this._targetSourceMapping.get(target);
+  }
+
+  _mapTargetToSource(fn) {
+    return (target, ...restArgs) => {
+      const source = this._getSource(target);
+      return fn(source, ...restArgs);
+    };
   }
 }

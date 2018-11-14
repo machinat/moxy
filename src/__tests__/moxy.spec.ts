@@ -127,8 +127,6 @@ test('empty mock as a constructor', () => {
 
   expect(spy2.sayHello.mock.calls).toEqual(expectedCalls.slice(1, 3));
 
-  expect(Spy.prototype.sayHello.mock.calls).toEqual(expectedCalls.slice(0, 2));
-
   expect(Spy.mock.calls).toEqual([
     new Call({ args: [1], instance: spy1, isConstructor: true }),
     new Call({ args: [2], instance: spy2, isConstructor: true }),
