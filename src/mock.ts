@@ -1,46 +1,19 @@
 import Call from './call';
+import {
+  createProxyTargetDouble,
+  clearAllPropOfMocks,
+  isProxifiable,
+  isFunctionProp,
+} from './utils';
+
+import {
+  MockOptions,
+  Proxifiable,
+  PropMockMapping,
+  MockOptionsInput,
+} from './type';
 
 const IS_MOXY = Symbol('is_moxy');
-
-// eslint-disable-next-line typescript/no-use-before-define
-type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
-// FIXME: wait Microsoft/TypeScript#26797 to support 👆
-export type Proxifiable = object | Function;
-
-type ProxyMiddleware = (
-  handler: ProxyHandler<Proxifiable>,
-  source: Proxifiable,
-  mock: Mock
-) => ProxyHandler<Proxifiable>;
-
-export type MockOptions = {
-  accessKey: string | symbol;
-  middlewares?: Array<ProxyMiddleware>;
-  proxifyReturnValue: boolean;
-  proxifyNewInstance: boolean;
-  proxifyProperties: boolean;
-  includeProperties?: Array<string | symbol>;
-  excludeProperties?: Array<string | symbol>;
-};
-
-export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
-
-const createProxyTargetDouble = source =>
-  typeof source === 'function' ? function double() {} : Object.create(null);
-
-const clearAllPropOfMocks = (mapping: PropMockMapping) => {
-  Object.keys(mapping).forEach(k => {
-    mapping[k].clear();
-  });
-};
-
-const isProxifiable = target =>
-  (typeof target === 'object' && target !== null) ||
-  typeof target === 'function';
-
-const isFunctionProp = (source, propName) =>
-  typeof source === 'function' &&
-  (propName === 'prototype' || propName === 'name' || propName === 'length');
 
 export default class Mock {
   options: MockOptions;
