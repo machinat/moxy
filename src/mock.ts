@@ -114,6 +114,7 @@ export default class Mock {
     this._proxifiedValueCache = new WeakMap();
     clearAllPropOfMocks(this.getterMocks);
     clearAllPropOfMocks(this.setterMocks);
+    return this;
   }
 
   reset() {
@@ -124,18 +125,22 @@ export default class Mock {
     this.setterMocks = {};
     this._wrapQueue = [];
     this._defaultWrapper = undefined;
+    return this;
   }
 
   wrap(wrapper: (Function) => Function) {
     this._defaultWrapper = wrapper;
+    return this;
   }
 
   wrapOnce(wrapper: Function) {
     this._wrapQueue.push(wrapper);
+    return this;
   }
 
   fake(implementation: Function) {
     this.wrap(() => implementation);
+    return this;
   }
 
   fakeWhenArgs(matcher: Function, implementation: Function) {
@@ -150,18 +155,22 @@ export default class Mock {
     };
 
     this.wrap(withArgsFunctor);
+    return this;
   }
 
   fakeOnce(implementation: Function) {
     this.wrapOnce(() => implementation);
+    return this;
   }
 
   fakeReturnValue(val: any) {
     this.wrap(() => () => val);
+    return this;
   }
 
   fakeReturnValueOnce(val: any) {
     this.wrapOnce(() => () => val);
+    return this;
   }
 
   handle(source: Proxifiable): ProxyHandler<Proxifiable> {

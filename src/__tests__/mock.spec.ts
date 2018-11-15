@@ -137,6 +137,18 @@ describe(`Faking methods
   #fakeReturnValue(val)
   #fakeReturnValueOnce(val)
 `, () => {
+  it('return mock itself', () => {
+    const mock = new Mock();
+
+    expect(mock.wrap(() => () => 1)).toBe(mock);
+    expect(mock.wrapOnce(() => () => 1)).toBe(mock);
+    expect(mock.fake(() => 1)).toBe(mock);
+    expect(mock.fakeWhenArgs(x => x, () => 1)).toBe(mock);
+    expect(mock.fakeOnce(() => 1)).toBe(mock);
+    expect(mock.fakeReturnValue(1)).toBe(mock);
+    expect(mock.fakeReturnValueOnce(1)).toBe(mock);
+  });
+
   it('invoke original target if not faked', () => {
     const mock = new Mock();
     const moxied = mock.proxify(() => 0);
@@ -199,8 +211,8 @@ describe(`Faking methods
 
     functor1.mock.clear();
 
-    mock.wrapOnce(functor1);
-    mock.wrap(functor2);
+    mock.wrapOnce(functor1).wrap(functor2);
+
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(2);
@@ -241,8 +253,7 @@ describe(`Faking methods
 
     expect(impl.mock.calls).toEqual([new Call({ args: [2], result: 1 })]);
 
-    mock.fakeReturnValue(2);
-    mock.fakeWhenArgs(matcher, impl);
+    mock.fakeReturnValue(2).fakeWhenArgs(matcher, impl);
 
     expect(moxied(2)).toBe(1);
     expect(moxied(1)).toBe(2);
@@ -262,9 +273,10 @@ describe(`Faking methods
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(0);
 
-    mock.fake(impletation);
-    mock.fakeOnce(impletation1);
-    mock.fakeOnce(impletation2);
+    mock
+      .fake(impletation)
+      .fakeOnce(impletation1)
+      .fakeOnce(impletation2);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(3);
     expect(moxied()).toBe(1);
@@ -294,9 +306,10 @@ describe(`Faking methods
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(0);
 
-    mock.fakeReturnValue(1);
-    mock.fakeReturnValueOnce(2);
-    mock.fakeReturnValueOnce(3);
+    mock
+      .fakeReturnValue(1)
+      .fakeReturnValueOnce(2)
+      .fakeReturnValueOnce(3);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(3);
     expect(moxied()).toBe(1);
@@ -338,6 +351,10 @@ describe('#clear()', () => {
   beforeEach(() => {
     mock = new Mock();
     moxied = mock.proxify(() => {});
+  });
+
+  it('return mock itself', () => {
+    expect(mock.clear()).toBe(mock);
   });
 
   it('empty calls', () => {
@@ -401,6 +418,10 @@ describe('#reset()', () => {
   beforeEach(() => {
     mock = new Mock();
     moxied = mock.proxify(() => {});
+  });
+
+  it('return mock itself', () => {
+    expect(mock.clear()).toBe(mock);
   });
 
   it('empty calls', () => {
