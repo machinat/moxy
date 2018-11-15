@@ -1,5 +1,7 @@
 import Call from './call';
 
+const IS_MOXY = Symbol('is_moxy');
+
 // eslint-disable-next-line typescript/no-use-before-define
 type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
 // FIXME: wait Microsoft/TypeScript#26797 to support 👆
@@ -48,8 +50,8 @@ export default class Mock {
   _proxifiedValueCache: WeakMap<Proxifiable, Proxifiable>;
   getterMocks: PropMockMapping;
   setterMocks: PropMockMapping;
-  defaultImplementation: Function;
-  impletationQueue: Array<Function>;
+  _defaultWrapper: Function;
+  _wrapQueue: Array<Function>;
 
   constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
@@ -120,24 +122,46 @@ export default class Mock {
     this._proxifiedValueCache = new WeakMap();
     this.getterMocks = {};
     this.setterMocks = {};
-    this.impletationQueue = [];
-    this.defaultImplementation = undefined;
+    this._wrapQueue = [];
+    this._defaultWrapper = undefined;
+  }
+
+  wrap(wrapper: (Function) => Function) {
+    this._defaultWrapper = wrapper;
+  }
+
+  wrapOnce(wrapper: Function) {
+    this._wrapQueue.push(wrapper);
   }
 
   fake(implementation: Function) {
-    this.defaultImplementation = implementation;
+    this.wrap(() => implementation);
+  }
+
+  fakeWhenArgs(matcher: Function, implementation: Function) {
+    const lastFunctor = this._defaultWrapper;
+
+    const withArgsFunctor = source => (...args) => {
+      if (matcher(...args)) {
+        return implementation(...args);
+      }
+
+      return lastFunctor ? lastFunctor(source)(...args) : source(...args);
+    };
+
+    this.wrap(withArgsFunctor);
   }
 
   fakeOnce(implementation: Function) {
-    this.impletationQueue.push(implementation);
+    this.wrapOnce(() => implementation);
   }
 
   fakeReturnValue(val: any) {
-    this.fake(() => val);
+    this.wrap(() => () => val);
   }
 
   fakeReturnValueOnce(val: any) {
-    this.fakeOnce(() => val);
+    this.wrapOnce(() => () => val);
   }
 
   handle(source: Proxifiable): ProxyHandler<Proxifiable> {
@@ -169,27 +193,28 @@ export default class Mock {
 
   _createBaseHandler(source: Proxifiable): ProxyHandler<Proxifiable> {
     return {
-      get: (target, propName, receiver) => {
-        if (propName === this.options.accessKey) {
+      get: (target, propKey, receiver) => {
+        if (propKey === IS_MOXY) return true;
+        if (propKey === this.options.accessKey) {
           return this;
         }
 
-        const getterMock = this.getter(propName);
+        const getterMock = this.getter(propKey);
         const implementation = getterMock._getImplementation();
 
         const call = new Call({ instance: receiver });
 
-        const shouldReturnNativeProp = isFunctionProp(source, propName);
+        const shouldReturnNativeProp = isFunctionProp(source, propKey);
         try {
           let property = implementation
             ? Reflect.apply(implementation, receiver, [])
             : Reflect.get(
-                !shouldReturnNativeProp && propName in target ? target : source,
-                propName
+                !shouldReturnNativeProp && propKey in target ? target : source,
+                propKey
               );
 
           if (
-            this._shouldProxifyProp(propName) &&
+            this._shouldProxifyProp(propKey) &&
             !shouldReturnNativeProp &&
             isProxifiable(property)
           ) {
@@ -207,19 +232,19 @@ export default class Mock {
         }
       },
 
-      set: (target, propName, value, receiver) => {
-        if (propName === this.options.accessKey) {
+      set: (target, propKey, value, receiver) => {
+        if (propKey === this.options.accessKey) {
           return false;
         }
 
-        const setterMock = this.setter(propName);
+        const setterMock = this.setter(propKey);
         const implementation = setterMock._getImplementation();
 
         const call = new Call({ args: [value], instance: receiver });
 
         try {
           if (implementation === undefined) {
-            return Reflect.set(target, propName, value);
+            return Reflect.set(target, propKey, value);
           }
 
           call.result = Reflect.apply(implementation, receiver, [value]);
@@ -297,6 +322,8 @@ export default class Mock {
   }
 
   _getProxified(target) {
+    if (target[IS_MOXY]) return target;
+
     if (this._proxifiedValueCache.has(target)) {
       return this._proxifiedValueCache.get(target);
     }
@@ -334,15 +361,15 @@ export default class Mock {
     );
   }
 
-  _getImplementation(target?: Function) {
-    if (this.impletationQueue.length > 0) {
-      return this.impletationQueue.shift();
+  _getImplementation(source?: Function) {
+    if (this._wrapQueue.length > 0) {
+      return this._wrapQueue.shift()(source);
     }
 
-    if (this.defaultImplementation !== undefined) {
-      return this.defaultImplementation;
+    if (this._defaultWrapper !== undefined) {
+      return this._defaultWrapper(source);
     }
 
-    return target;
+    return source;
   }
 }

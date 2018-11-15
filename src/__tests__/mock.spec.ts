@@ -53,7 +53,6 @@ describe('#constructor(options)', () => {
     const mock = new Mock();
 
     expect(mock.calls).toEqual([]);
-    expect(mock.impletationQueue).toEqual([]);
     expect(mock.setterMocks).toEqual({});
     expect(mock.getterMocks).toEqual({});
   });
@@ -129,8 +128,11 @@ describe('#calls()', () => {
   });
 });
 
-describe(`Faking implementation
+describe(`Faking methods
+  #wrap(functor)
+  #wrapOnce(functor)
   #fake(impl)
+  #fakeWhenArgs(matcher, impl)
   #fakeOnce(impl)
   #fakeReturnValue(val)
   #fakeReturnValueOnce(val)
@@ -142,15 +144,108 @@ describe(`Faking implementation
     expect(moxied()).toBe(0);
   });
 
-  it('invoke faked implementation if #fake(impl)', () => {
+  const mockIntermediateCurryFunc = mock => fn => (...args) => {
+    const result = fn(...args);
+    return typeof result === 'function' ? mock.proxify(result) : result;
+  };
+
+  it('invoke faking wrapper from #wrap(wrapper) to make new implementation', () => {
+    const mock = new Mock();
+    const source = () => 0;
+    const moxied = mock.proxify(source);
+
+    const functor = moxy(() => () => 1);
+    functor.mock.wrap(mockIntermediateCurryFunc(functor.mock));
+
+    mock.wrap(functor);
+
+    expect(moxied(1, 2, 3)).toBe(1);
+
+    expect(functor.mock.calls.length).toBe(2);
+
+    expect(functor.mock.calls[0].args).toEqual([source]);
+    expect(typeof functor.mock.calls[0].result).toBe('function');
+
+    expect(functor.mock.calls[1].args).toEqual([1, 2, 3]);
+    expect(functor.mock.calls[1].result).toBe(1);
+
+    expect(moxied()).toBe(1);
+
+    mock.reset();
+    expect(moxied()).toBe(0);
+  });
+
+  it('invoke faking wrapper from #wrapOnce(wrapper) only once', () => {
+    const mock = new Mock();
+    const source = () => 0;
+    const moxied = mock.proxify(source);
+
+    const functor1 = moxy(() => () => 1);
+    const functor2 = moxy(() => () => 2);
+    functor1.mock.wrap(mockIntermediateCurryFunc(functor1.mock));
+    functor2.mock.wrap(mockIntermediateCurryFunc(functor2.mock));
+
+    mock.wrapOnce(functor1);
+    expect(moxied(1, 2, 3)).toBe(1);
+    expect(moxied(1, 2, 3)).toBe(0);
+
+    expect(functor1.mock.calls.length).toBe(2);
+
+    expect(functor1.mock.calls[0].args).toEqual([source]);
+    expect(typeof functor1.mock.calls[0].result).toBe('function');
+
+    expect(functor1.mock.calls[1].args).toEqual([1, 2, 3]);
+    expect(functor1.mock.calls[1].result).toBe(1);
+
+    functor1.mock.clear();
+
+    mock.wrapOnce(functor1);
+    mock.wrap(functor2);
+    expect(moxied()).toBe(1);
+    expect(moxied()).toBe(2);
+    expect(moxied()).toBe(2);
+
+    mock.reset();
+    expect(moxied()).toBe(0);
+  });
+
+  it('invoke faked implementation from #fake(impl)', () => {
     const mock = new Mock();
     const moxied = mock.proxify(() => 0);
 
-    const faked = () => 1;
-    mock.fake(faked);
+    const impletation = () => 1;
+    mock.fake(impletation);
 
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(1);
+
+    mock.reset();
+    expect(moxied()).toBe(0);
+  });
+
+  it('invoke fake implementation only when args match from #fakeWhenArgs(matcher, impl)', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => 0);
+
+    const matcher = moxy(n => n % 2 === 0);
+    const impl = moxy(() => 1);
+    mock.fakeWhenArgs(matcher, impl);
+
+    expect(moxied(2)).toBe(1);
+    expect(moxied(1)).toBe(0);
+
+    expect(matcher.mock.calls).toEqual([
+      new Call({ args: [2], result: true }),
+      new Call({ args: [1], result: false }),
+    ]);
+
+    expect(impl.mock.calls).toEqual([new Call({ args: [2], result: 1 })]);
+
+    mock.fakeReturnValue(2);
+    mock.fakeWhenArgs(matcher, impl);
+
+    expect(moxied(2)).toBe(1);
+    expect(moxied(1)).toBe(2);
 
     mock.reset();
     expect(moxied()).toBe(0);
@@ -159,17 +254,17 @@ describe(`Faking implementation
   it('invoke fake implementation from #fakeOnce(impl) only once', () => {
     const mock = new Mock();
     const moxied = mock.proxify(() => 0);
-    const faked = () => 1;
-    const faked1 = () => 2;
-    const faked2 = () => 3;
+    const impletation = () => 1;
+    const impletation1 = () => 2;
+    const impletation2 = () => 3;
 
-    mock.fakeOnce(faked);
+    mock.fakeOnce(impletation);
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(0);
 
-    mock.fake(faked);
-    mock.fakeOnce(faked1);
-    mock.fakeOnce(faked2);
+    mock.fake(impletation);
+    mock.fakeOnce(impletation1);
+    mock.fakeOnce(impletation2);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(3);
     expect(moxied()).toBe(1);
@@ -178,34 +273,36 @@ describe(`Faking implementation
     expect(moxied()).toBe(0);
   });
 
-  it('#fakeReturnValue(val) is equivelant to #fake(() => val)', () => {
-    const mock = moxy(new Mock());
+  it('returns faked value if #fakeReturnValue(val)', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => 0);
 
-    const faked = {};
-    mock.fakeReturnValue(faked);
+    mock.fakeReturnValue(1);
 
-    expect(mock.fake.mock.calls.length).toBe(1);
-    expect(mock.fake.mock.calls[0].args.length).toBe(1);
+    expect(moxied()).toBe(1);
+    expect(moxied()).toBe(1);
 
-    const fakedFn = mock.fake.mock.calls[0].args[0];
-    expect(typeof fakedFn).toBe('function');
-    expect(fakedFn()).toBe(faked);
+    mock.reset();
+    expect(moxied()).toBe(0);
   });
 
-  it('#fakeReturnValueOnce(val) is equivelant to #fakeOnce(() => val)', () => {
-    const mock = moxy(new Mock(), {
-      includeProperties: ['fakeOnce'],
-    });
+  it('returns faked value if only once #fakeReturnValueOnce(val)', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => 0);
 
-    const faked = {};
-    mock.fakeReturnValueOnce(faked);
+    mock.fakeReturnValueOnce(1);
+    expect(moxied()).toBe(1);
+    expect(moxied()).toBe(0);
 
-    expect(mock.fakeOnce.mock.calls.length).toBe(1);
-    expect(mock.fakeOnce.mock.calls[0].args.length).toBe(1);
+    mock.fakeReturnValue(1);
+    mock.fakeReturnValueOnce(2);
+    mock.fakeReturnValueOnce(3);
+    expect(moxied()).toBe(2);
+    expect(moxied()).toBe(3);
+    expect(moxied()).toBe(1);
 
-    const fakeOnceFn = mock.fakeOnce.mock.calls[0].args[0];
-    expect(typeof fakeOnceFn).toBe('function');
-    expect(fakeOnceFn()).toBe(faked);
+    mock.reset();
+    expect(moxied()).toBe(0);
   });
 });
 
@@ -919,6 +1016,16 @@ describe('#handle()', () => {
       expect(fn2.mock.options).toEqual(mock.options);
       expect(fn2.mock).not.toBe(mock);
       expect(fn2.mock).not.toBe(fn1.mock);
+    });
+
+    it('does not re-proxify if returned value is already moxied', () => {
+      const returnedValue = moxy({});
+
+      const mock = new Mock();
+      const moxied = mock.proxify(() => returnedValue);
+
+      expect(moxied()).toBe(returnedValue);
+      expect(moxied.mock.calls[0].result).toBe(returnedValue);
     });
 
     it('keep original return value if proxifyReturnValue set to false', () => {
