@@ -1,6 +1,7 @@
 import moxy from '..';
 import Call from '../call';
 import Mock, { isMoxied } from '../mock';
+import { mockCurryFunction } from '../helpers';
 
 declare let global: { Proxy: any };
 
@@ -178,18 +179,13 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  const mockIntermediateCurryFunc = mock => fn => (...args) => {
-    const result = fn(...args);
-    return typeof result === 'function' ? mock.proxify(result) : result;
-  };
-
   it('invoke faking wrapper from #wrap(wrapper) to make new implementation', () => {
     const mock = new Mock();
     const source = () => 0;
     const moxied = mock.proxify(source);
 
     const functor = moxy(() => () => 1);
-    functor.mock.wrap(mockIntermediateCurryFunc(functor.mock));
+    functor.mock.wrap(mockCurryFunction(functor.mock));
 
     mock.wrap(functor);
 
@@ -216,8 +212,8 @@ describe(`Faking methods
 
     const functor1 = moxy(() => () => 1);
     const functor2 = moxy(() => () => 2);
-    functor1.mock.wrap(mockIntermediateCurryFunc(functor1.mock));
-    functor2.mock.wrap(mockIntermediateCurryFunc(functor2.mock));
+    functor1.mock.wrap(mockCurryFunction(functor1.mock));
+    functor2.mock.wrap(mockCurryFunction(functor2.mock));
 
     mock.wrapOnce(functor1);
     expect(moxied(1, 2, 3)).toBe(1);
