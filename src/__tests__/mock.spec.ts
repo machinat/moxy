@@ -862,21 +862,49 @@ describe('#handle()', () => {
 
     it('mock constructor implementation with faking methods', () => {
       function Foo() {
-        this.bar = 'bar';
+        this.bar = 'baz';
       }
 
       const mock = new Mock();
       const MoxiedFoo = mock.proxify(Foo);
 
-      expect(new MoxiedFoo()).toEqual({ bar: 'bar' });
+      const foo = new MoxiedFoo();
+      expect(foo).toEqual({ bar: 'baz' });
 
       MoxiedFoo.mock.fake(function f() {
         this.faked = true;
       });
       expect(new MoxiedFoo()).toEqual({ faked: true });
 
+      expect(foo).toBeInstanceOf(Foo);
+      expect(foo).toBeInstanceOf(MoxiedFoo);
+
       expect(MoxiedFoo.mock.calls).toEqual([
-        new Call({ isConstructor: true, instance: { bar: 'bar' } }),
+        new Call({ isConstructor: true, instance: { bar: 'baz' } }),
+        new Call({ isConstructor: true, instance: { faked: true } }),
+      ]);
+    });
+
+    it('can interfer the instance created by return object in constructor', () => {
+      function Foo() {
+        this.bar = 'baz';
+      }
+
+      const mock = new Mock();
+      const MoxiedFoo = mock.proxify(Foo);
+
+      MoxiedFoo.mock.fake(function f() {
+        return { faked: true };
+      });
+
+      const foo = new MoxiedFoo();
+      expect(foo).toEqual({ faked: true });
+
+      expect(foo).not.toBeInstanceOf(Foo);
+      expect(foo).not.toBeInstanceOf(MoxiedFoo);
+      expect(Object.getPrototypeOf(foo)).toBe(Object.prototype);
+
+      expect(MoxiedFoo.mock.calls).toEqual([
         new Call({ isConstructor: true, instance: { faked: true } }),
       ]);
     });
