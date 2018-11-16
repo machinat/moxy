@@ -1,8 +1,23 @@
 import moxy from '..';
 import Call from '../call';
-import Mock from '../mock';
+import Mock, { isMoxied } from '../mock';
 
 declare let global: { Proxy: any };
+
+describe('isMoxied()', () => {
+  it('tells if a target is moxied', () => {
+    function f() {}
+    const o = {};
+    expect(isMoxied(moxy(f))).toBe(true);
+    expect(isMoxied(moxy(o))).toBe(true);
+
+    expect(isMoxied(new Mock().proxify(f))).toBe(true);
+    expect(isMoxied(new Mock().proxify(o))).toBe(true);
+
+    expect(isMoxied(f)).toBe(false);
+    expect(isMoxied(o)).toBe(false);
+  });
+});
 
 it('is a constructor', () => {
   expect(typeof Mock).toBe('function');

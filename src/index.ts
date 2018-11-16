@@ -26,4 +26,4 @@ moxy.setDefaultOptions = options => {
 
 export default moxy;
 export { default as moxyFactory } from './factory';
-export { default as Mock } from './mock';
+export { default as Mock, isMoxied } from './mock';
