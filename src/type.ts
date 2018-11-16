@@ -1,5 +1,10 @@
 import Mock from './mock';
 
+export type MoxyFunc = (
+  target?: object | Function,
+  options?: MockOptionsInput
+) => any;
+
 // eslint-disable-next-line typescript/no-use-before-define
 export type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
 // FIXME: wait Microsoft/TypeScript#26797 to support 👆

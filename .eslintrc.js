@@ -24,11 +24,8 @@ module.exports = {
       singleQuote: true,
     }],
     'import/extensions': 0,
-    'typescript/no-unused-vars': 'error',
     'no-use-before-define': 0,
-    'typescript/no-use-before-define': ['error', {
-      typedefs: false,
-    }],
+    'typescript/no-unused-vars': 'error',
   },
   settings: {
     'import/resolver': {

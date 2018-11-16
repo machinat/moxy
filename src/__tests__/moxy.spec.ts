@@ -1,4 +1,4 @@
-import moxy from '../moxy';
+import moxy from '..';
 import Call from '../call';
 
 it('is a function', () => {
