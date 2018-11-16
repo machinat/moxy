@@ -28,6 +28,8 @@ it('use default options provided to create Mock', () => {
     proxifyProperties: false,
     includeProperties: ['foo'],
     excludeProperties: ['bar'],
+    recordGetter: true,
+    recordSetter: true,
   };
 
   const moxied = factory()({}, options);
@@ -44,6 +46,8 @@ it('use create time options provided to create Mock', () => {
     proxifyProperties: false,
     includeProperties: ['foo'],
     excludeProperties: ['bar'],
+    recordGetter: true,
+    recordSetter: true,
   };
 
   const moxied = factory()({}, options);
@@ -58,6 +62,7 @@ it('extends the default options with create time options', () => {
     proxifyReturnValue: false,
     proxifyNewInstance: false,
     includeProperties: ['foo'],
+    recordGetter: true,
   };
 
   const createTimeOptions = {
@@ -65,6 +70,7 @@ it('extends the default options with create time options', () => {
     proxifyNewInstance: true,
     proxifyProperties: true,
     excludeProperties: ['bar'],
+    recordSetter: true,
   };
 
   const moxied = factory(defaultOptions)({}, createTimeOptions);
@@ -77,6 +83,8 @@ it('extends the default options with create time options', () => {
     proxifyProperties: true,
     includeProperties: ['foo'],
     excludeProperties: ['bar'],
+    recordGetter: true,
+    recordSetter: true,
   });
 });
 
@@ -106,5 +114,7 @@ it('concat the array options', () => {
     proxifyProperties: true,
     includeProperties: ['foo1', 'foo2', 'foo3'],
     excludeProperties: ['bar1', 'bar2', 'bar3'],
+    recordGetter: false,
+    recordSetter: false,
   });
 });

@@ -68,7 +68,7 @@ describe('empty mock', () => {
   });
 });
 
-test('empty mock as an object', () => {
+xtest('empty mock as an object', () => {
   const greeting = agent => `Hello, ${agent.introduce()}`;
   function introduce() {
     return `I'm ${this.code}.`;

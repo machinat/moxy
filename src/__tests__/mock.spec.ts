@@ -19,6 +19,8 @@ describe('#constructor(options)', () => {
       proxifyProperties: true,
       includeProperties: null,
       excludeProperties: null,
+      recordGetter: false,
+      recordSetter: false,
     });
 
     const fullOptions = {
@@ -29,6 +31,8 @@ describe('#constructor(options)', () => {
       proxifyProperties: false,
       includeProperties: ['foo'],
       excludeProperties: ['bar'],
+      recordGetter: true,
+      recordSetter: true,
     };
     expect(new Mock(fullOptions).options).toEqual(fullOptions);
 
@@ -37,6 +41,7 @@ describe('#constructor(options)', () => {
         accessKey: 'moooock',
         proxifyReturnValue: false,
         includeProperties: ['foo', 'bar'],
+        recordGetter: true,
       }).options
     ).toEqual({
       accessKey: 'moooock',
@@ -46,6 +51,8 @@ describe('#constructor(options)', () => {
       proxifyProperties: true,
       includeProperties: ['foo', 'bar'],
       excludeProperties: null,
+      recordGetter: true,
+      recordSetter: false,
     });
   });
 
@@ -346,18 +353,15 @@ describe(`#getter(prop)`, () => {
 });
 
 describe('#clear()', () => {
-  let mock;
-  let moxied;
-  beforeEach(() => {
-    mock = new Mock();
-    moxied = mock.proxify(() => {});
-  });
-
   it('return mock itself', () => {
+    const mock = new Mock();
     expect(mock.clear()).toBe(mock);
   });
 
   it('empty calls', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => {});
+
     moxied();
     moxied();
 
@@ -368,6 +372,9 @@ describe('#clear()', () => {
   });
 
   it('empty proxified values cached', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => {});
+
     const fixed = {};
     mock.fakeReturnValue(fixed);
 
@@ -381,6 +388,9 @@ describe('#clear()', () => {
   });
 
   it('keep faked implementations', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => {});
+
     mock.fake(() => 0);
     moxied();
     mock.fakeOnce(() => 1);
@@ -391,6 +401,9 @@ describe('#clear()', () => {
   });
 
   it('clear all setterMocks and getterMocks too', () => {
+    const mock = new Mock({ recordGetter: true, recordSetter: true });
+    const moxied = mock.proxify(() => {});
+
     moxied.foo = 'bar';
     expect(moxied.foo).toBe('bar');
 
@@ -413,18 +426,15 @@ describe('#clear()', () => {
 });
 
 describe('#reset()', () => {
-  let mock;
-  let moxied;
-  beforeEach(() => {
-    mock = new Mock();
-    moxied = mock.proxify(() => {});
-  });
-
   it('return mock itself', () => {
+    const mock = new Mock();
     expect(mock.clear()).toBe(mock);
   });
 
   it('empty calls', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => {});
+
     moxied();
     moxied();
 
@@ -435,6 +445,9 @@ describe('#reset()', () => {
   });
 
   it('empty proxifiedCache', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => {});
+
     const fixed = {};
     mock.fakeReturnValue(fixed);
 
@@ -448,6 +461,9 @@ describe('#reset()', () => {
   });
 
   it('empty setterMocks and getterMocks', () => {
+    const mock = new Mock({ recordGetter: true, recordSetter: true });
+    const moxied = mock.proxify(() => {});
+
     moxied.foo = 'bar';
     expect(moxied.foo).toBe('bar');
 
@@ -468,6 +484,9 @@ describe('#reset()', () => {
   });
 
   it('empties fake impletations', () => {
+    const mock = new Mock();
+    const moxied = mock.proxify(() => {});
+
     mock.fake(() => 0);
     expect(moxied()).toBe(0);
     mock.fakeOnce(() => 1);
@@ -561,8 +580,21 @@ describe('#handle()', () => {
       expect(MOCK in moxied1).toBe(false);
     });
 
-    it('store getting prop record as getter calls at #getter(prop)', () => {
-      const mock = new Mock();
+    it('does not store getting prop records if recordGetter set to false', () => {
+      const mock = new Mock({ recordGetter: false });
+      const moxied = mock.proxify({ foo: 'bar' });
+
+      const getFooMock = mock.getter('foo');
+
+      expect(moxied.foo).toBe('bar');
+      moxied.foo = 'baz';
+      expect(moxied.foo).toBe('baz');
+
+      expect(getFooMock.calls).toEqual([]);
+    });
+
+    it('store getting prop records in #getter(prop) if recordGetter set to true', () => {
+      const mock = new Mock({ recordGetter: true });
       const moxied = mock.proxify({ foo: 'bar' });
 
       const getFooMock = mock.getter('foo');
@@ -578,7 +610,7 @@ describe('#handle()', () => {
     });
 
     it('mock the prop value get by fake implementation at #getter(prop)', () => {
-      const mock = new Mock();
+      const mock = new Mock({ recordGetter: true });
       const moxied = mock.proxify({ foo: 'bar' });
 
       const getFooMock = mock.getter('foo');
@@ -730,8 +762,21 @@ describe('#handle()', () => {
   });
 
   describe('handler.set()', () => {
-    it('store props setting as setter calls in #setter(prop)', () => {
-      const mock = new Mock();
+    it('does not store props settingif recordSetter set to false', () => {
+      const mock = new Mock({ recordSetter: false });
+      const moxied = mock.proxify({ foo: 'bar' });
+
+      const setFooMock = mock.setter('foo');
+
+      expect(moxied.foo).toBe('bar');
+      moxied.foo = 'baz';
+      expect(moxied.foo).toBe('baz');
+
+      expect(setFooMock.calls).toEqual([]);
+    });
+
+    it('store props setting in #setter(prop) if recordSetter set to true', () => {
+      const mock = new Mock({ recordSetter: true });
       const moxied = mock.proxify({ foo: 'bar' });
 
       const setFooMock = mock.setter('foo');
@@ -749,7 +794,7 @@ describe('#handle()', () => {
     });
 
     it('mock the prop value setting by fake implementation at #setter(prop)', () => {
-      const mock = new Mock();
+      const mock = new Mock({ recordSetter: true });
       const moxied = mock.proxify({ foo: 'bar' });
 
       const setFooMock = mock.setter('foo');

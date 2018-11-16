@@ -24,6 +24,8 @@ export type MockOptions = {
   proxifyProperties: boolean;
   includeProperties?: Array<string | symbol>;
   excludeProperties?: Array<string | symbol>;
+  recordGetter: boolean;
+  recordSetter: boolean;
 };
 
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };

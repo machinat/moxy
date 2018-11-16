@@ -35,6 +35,8 @@ export default class Mock {
       proxifyProperties: true,
       includeProperties: null,
       excludeProperties: null,
+      recordGetter: false,
+      recordSetter: false,
     };
 
     this.options = {
@@ -210,7 +212,7 @@ export default class Mock {
 
           throw err;
         } finally {
-          getterMock._calls.push(call);
+          if (this.options.recordGetter) getterMock._calls.push(call);
         }
       },
 
@@ -237,7 +239,7 @@ export default class Mock {
 
           throw err;
         } finally {
-          setterMock._calls.push(call);
+          if (this.options.recordSetter) setterMock._calls.push(call);
         }
       },
 
