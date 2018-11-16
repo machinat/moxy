@@ -15,7 +15,7 @@ import {
 
 const IS_MOXY = Symbol('is_moxy');
 
-export const isMoxied = moxied => moxied[IS_MOXY] === true;
+export const isMoxy = moxied => moxied[IS_MOXY] === true;
 
 export default class Mock {
   options: MockOptions;
@@ -308,7 +308,7 @@ export default class Mock {
   }
 
   _getProxified(target) {
-    if (isMoxied(target)) return target;
+    if (isMoxy(target)) return target;
 
     if (this._proxifiedValueCache.has(target)) {
       return this._proxifiedValueCache.get(target);

@@ -1,22 +1,22 @@
 import moxy from '..';
 import Call from '../call';
-import Mock, { isMoxied } from '../mock';
+import Mock, { isMoxy } from '../mock';
 import { mockCurryFunction } from '../helpers';
 
 declare let global: { Proxy: any };
 
-describe('isMoxied()', () => {
+describe('isMoxy()', () => {
   it('tells if a target is moxied', () => {
     function f() {}
     const o = {};
-    expect(isMoxied(moxy(f))).toBe(true);
-    expect(isMoxied(moxy(o))).toBe(true);
+    expect(isMoxy(moxy(f))).toBe(true);
+    expect(isMoxy(moxy(o))).toBe(true);
 
-    expect(isMoxied(new Mock().proxify(f))).toBe(true);
-    expect(isMoxied(new Mock().proxify(o))).toBe(true);
+    expect(isMoxy(new Mock().proxify(f))).toBe(true);
+    expect(isMoxy(new Mock().proxify(o))).toBe(true);
 
-    expect(isMoxied(f)).toBe(false);
-    expect(isMoxied(o)).toBe(false);
+    expect(isMoxy(f)).toBe(false);
+    expect(isMoxy(o)).toBe(false);
   });
 });
 
