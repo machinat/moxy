@@ -1149,6 +1149,61 @@ describe('#handle()', () => {
     });
   });
 
+  describe('handler.getOwnPropertyDescriptor()', () => {
+    it('returns descriptor of source if not defined in target', () => {
+      const mock = new Mock();
+      const source = { foo: 'bar' };
+
+      const moxied = mock.proxify(source);
+
+      expect(Object.getOwnPropertyDescriptor(moxied, 'foo')).toEqual({
+        value: 'bar',
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    });
+
+    it('returns descriptor of source as configurable and writable', () => {
+      const mock = new Mock();
+      const source = {};
+      Object.defineProperty(source, 'foo', {
+        value: 'bar',
+        enumerable: false,
+        configurable: false,
+        writable: false,
+      });
+
+      const moxied = mock.proxify(source);
+
+      expect(Object.getOwnPropertyDescriptor(moxied, 'foo')).toEqual({
+        value: 'bar',
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      });
+    });
+
+    it("returns descriptor of target prior to source's", () => {
+      const mock = new Mock();
+      const source = { foo: 'bar' };
+
+      const moxied = mock.proxify(source);
+
+      Object.defineProperty(moxied, 'foo', {
+        value: 'baz',
+        enumerable: true,
+      });
+
+      expect(Object.getOwnPropertyDescriptor(moxied, 'foo')).toEqual({
+        value: 'baz',
+        enumerable: true,
+        configurable: false,
+        writable: false,
+      });
+    });
+  });
+
   describe('other handler method', () => {
     it('work as usual', () => {
       class Foo {}

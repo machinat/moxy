@@ -292,8 +292,13 @@ export default class Mock {
       },
 
       getOwnPropertyDescriptor: (target, prop) =>
-        Reflect.getOwnPropertyDescriptor(target, prop) ||
-        Reflect.getOwnPropertyDescriptor(source, prop),
+        Reflect.getOwnPropertyDescriptor(target, prop) || {
+          ...Reflect.getOwnPropertyDescriptor(source, prop),
+          // NOTE: descriptor from source should be configurable and writable
+          //       since it is a mock.
+          configurable: true,
+          writable: true,
+        },
 
       getPrototypeOf: target =>
         (typeof source === 'object' && Reflect.getPrototypeOf(target)) ||
