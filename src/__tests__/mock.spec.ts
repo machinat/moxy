@@ -1123,7 +1123,17 @@ describe('#handle()', () => {
       expect(fn2.mock).not.toBe(fn1.mock);
     });
 
-    it('does not re-proxify if returned value is already moxied', () => {
+    it('does not proxify promise returned', () => {
+      const promise = Promise.resolve();
+      const moxied = moxy();
+
+      moxied.mock.fake(() => promise);
+
+      expect(moxied()).toBeInstanceOf(Promise);
+      expect(isMoxy(moxied())).toBe(false);
+    });
+
+    it('does not re-proxify if returned value is already a moxy', () => {
       const returnedValue = moxy({});
 
       const mock = new Mock();

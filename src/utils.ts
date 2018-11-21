@@ -10,7 +10,9 @@ export const clearAllPropOfMocks = (mapping: PropMockMapping) => {
 };
 
 export const isProxifiable = (target: any) =>
-  (typeof target === 'object' && target !== null) ||
+  (typeof target === 'object' &&
+    target !== null &&
+    !(target instanceof Promise)) ||
   typeof target === 'function';
 
 export const isFunctionProp = (source, propName) =>
