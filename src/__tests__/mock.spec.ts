@@ -1123,14 +1123,34 @@ describe('#handle()', () => {
       expect(fn2.mock).not.toBe(fn1.mock);
     });
 
-    it('does not proxify promise returned', () => {
-      const promise = Promise.resolve();
+    it('does not proxify promise returned but the resolved value', async () => {
+      const result = { hello: 'world' };
+      const promise = Promise.resolve(result);
       const moxied = moxy();
 
       moxied.mock.fake(() => promise);
 
       expect(moxied()).toBeInstanceOf(Promise);
       expect(isMoxy(moxied())).toBe(false);
+
+      await expect(moxied()).resolves.not.toBe(result);
+      await expect(moxied()).resolves.toEqual(result);
+
+      const r = await moxied();
+
+      expect(isMoxy(r)).toBe(true);
+      expect(r.mock).toBeInstanceOf(Mock);
+    });
+
+    it('does not proxify promise rejected value', async () => {
+      const result = { something: 'wrong' };
+      const promise = Promise.reject(result);
+      const moxied = moxy();
+
+      moxied.mock.fake(() => promise);
+
+      await expect(moxied()).rejects.toBe(result);
+      await expect(moxied()).rejects.not.toBe(undefined);
     });
 
     it('does not re-proxify if returned value is already a moxy', () => {

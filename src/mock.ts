@@ -276,8 +276,18 @@ export default class Mock {
         try {
           let result = Reflect.apply(<Function>implementation, thisArg, args);
 
-          if (this.options.proxifyReturnValue && isProxifiable(result)) {
-            result = this._getProxified(result);
+          if (this.options.proxifyReturnValue) {
+            // prettier-ignore
+            result = isProxifiable(result)
+              ? this._getProxified(result)
+              : result instanceof Promise
+              ? new Promise((resolve, reject) =>
+                  result
+                    .then(r => (isProxifiable(r) ? this._getProxified(r) : r))
+                    .then(resolve)
+                    .catch(reject)
+                )
+              : result;
           }
 
           return (call.result = result);

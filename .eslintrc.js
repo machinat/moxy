@@ -14,6 +14,7 @@ module.exports = {
   rules: {
     'no-undef': 0, // https://github.com/eslint/typescript-eslint-parser/issues/437
     'no-underscore-dangle': 0,
+    'no-nested-ternary': 0,
     'no-return-assign': ['error', 'except-parens'],
     'lines-between-class-members': ['error', 'always', {
       exceptAfterSingleLine: true,
