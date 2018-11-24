@@ -6,16 +6,7 @@ type MoxyModule = MoxyFunc & {
   setDefaultOptions: (MockOptionsInput) => void;
 };
 
-const defaultOptions = {
-  // The default options are:
-  // accessKey: 'mock',
-  // middlewares: null,
-  // proxifyReturnValue: true,
-  // proxifyNewInstance: true,
-  // proxifyProperties: true,
-  // includeProperties: null,
-  // excludeProperties: null,
-};
+const defaultOptions = {};
 
 const moxy = <MoxyModule>moxyFactory(defaultOptions);
 

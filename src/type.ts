@@ -19,11 +19,11 @@ export type ProxyMiddleware = (
 export type MockOptions = {
   accessKey: string | symbol;
   middlewares?: Array<ProxyMiddleware>;
-  proxifyReturnValue: boolean;
-  proxifyNewInstance: boolean;
-  proxifyProperties: boolean;
-  includeProperties?: Array<string | symbol>;
-  excludeProperties?: Array<string | symbol>;
+  mockReturnValue: boolean;
+  mockNewInstance: boolean;
+  mockProperty: boolean;
+  includeProps?: Array<string | symbol>;
+  excludeProps?: Array<string | symbol>;
   recordGetter: boolean;
   recordSetter: boolean;
 };

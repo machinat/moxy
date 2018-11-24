@@ -30,11 +30,11 @@ describe('#constructor(options)', () => {
     expect(new Mock().options).toEqual({
       accessKey: 'mock',
       middlewares: null,
-      proxifyReturnValue: true,
-      proxifyNewInstance: true,
-      proxifyProperties: true,
-      includeProperties: null,
-      excludeProperties: null,
+      mockReturnValue: false,
+      mockNewInstance: true,
+      mockProperty: true,
+      includeProps: null,
+      excludeProps: null,
       recordGetter: false,
       recordSetter: false,
     });
@@ -42,11 +42,11 @@ describe('#constructor(options)', () => {
     const fullOptions = {
       accessKey: 'MOCK',
       middlewares: [handler => handler],
-      proxifyReturnValue: false,
-      proxifyNewInstance: false,
-      proxifyProperties: false,
-      includeProperties: ['foo'],
-      excludeProperties: ['bar'],
+      mockReturnValue: false,
+      mockNewInstance: false,
+      mockProperty: false,
+      includeProps: ['foo'],
+      excludeProps: ['bar'],
       recordGetter: true,
       recordSetter: true,
     };
@@ -55,18 +55,18 @@ describe('#constructor(options)', () => {
     expect(
       new Mock({
         accessKey: 'moooock',
-        proxifyReturnValue: false,
-        includeProperties: ['foo', 'bar'],
+        mockReturnValue: false,
+        includeProps: ['foo', 'bar'],
         recordGetter: true,
       }).options
     ).toEqual({
       accessKey: 'moooock',
       middlewares: null,
-      proxifyReturnValue: false,
-      proxifyNewInstance: true,
-      proxifyProperties: true,
-      includeProperties: ['foo', 'bar'],
-      excludeProperties: null,
+      mockReturnValue: false,
+      mockNewInstance: true,
+      mockProperty: true,
+      includeProps: ['foo', 'bar'],
+      excludeProps: null,
       recordGetter: true,
       recordSetter: false,
     });
@@ -91,14 +91,14 @@ describe('#proxify(source, mock)', () => {
   it('returns new Proxy(target, mock.handle()) with transfromed empty target', () => {
     const handler = { apply() {} };
     const mockInstance = moxy(new Mock(), {
-      proxifyReturnValue: false,
-      includeProperties: ['handle'],
+      mockReturnValue: false,
+      includeProps: ['handle'],
     });
     mockInstance.handle.mock.fakeReturnValue(handler);
 
     global.Proxy = moxy(class {}, {
-      proxifyNewInstance: false,
-      proxifyProperties: false,
+      mockNewInstance: false,
+      mockProperty: false,
     });
 
     const fn = () => {};
@@ -383,7 +383,7 @@ describe('#clear()', () => {
   });
 
   it('empty proxified values cached', () => {
-    const mock = new Mock();
+    const mock = new Mock({ mockReturnValue: true });
     const moxied = mock.proxify(() => {});
 
     const fixed = {};
@@ -650,8 +650,8 @@ describe('#handle()', () => {
       ]);
     });
 
-    it('proxify object or function prop if proxifyProperties set to true', () => {
-      const mock = new Mock({ proxifyProperties: true });
+    it('proxify object or function prop if mockProperty set to true', () => {
+      const mock = new Mock({ mockProperty: true });
       const target = {
         foo: { bar: 'baz' },
         hello() {
@@ -684,10 +684,10 @@ describe('#handle()', () => {
       expect(moxied.hello()).toBe('fulk');
     });
 
-    it('proxify only props in includeProperties if defined', () => {
+    it('proxify only props in includeProps if defined', () => {
       const mock = new Mock({
-        proxifyProperties: true,
-        includeProperties: ['foo'],
+        mockProperty: true,
+        includeProps: ['foo'],
       });
 
       const target = { foo: {}, bar: {} };
@@ -700,10 +700,10 @@ describe('#handle()', () => {
       expect(moxied.bar.mock).toBe(undefined);
     });
 
-    it('proxify excluding props in excludeProperties if defined', () => {
+    it('proxify excluding props in excludeProps if defined', () => {
       const mock = new Mock({
-        proxifyProperties: true,
-        excludeProperties: ['bar'],
+        mockProperty: true,
+        excludeProps: ['bar'],
       });
 
       const target = { foo: {}, bar: {} };
@@ -716,11 +716,11 @@ describe('#handle()', () => {
       expect(moxied.bar.mock).toBe(undefined);
     });
 
-    test('excludeProperties should take presedence of includeProperties', () => {
+    test('excludeProps should take presedence of includeProps', () => {
       const mock = new Mock({
-        proxifyProperties: true,
-        includeProperties: ['foo', 'bar'],
-        excludeProperties: ['bar', 'baz'],
+        mockProperty: true,
+        includeProps: ['foo', 'bar'],
+        excludeProps: ['bar', 'baz'],
       });
 
       const target = { foo: {}, bar: {}, baz: {} };
@@ -736,8 +736,8 @@ describe('#handle()', () => {
       expect(moxied.baz.mock).toBe(undefined);
     });
 
-    it('returns orginal prop if proxifyProperties set to false', () => {
-      const mock = new Mock({ proxifyProperties: false });
+    it('returns orginal prop if mockProperty set to false', () => {
+      const mock = new Mock({ mockProperty: false });
       const target = {
         foo: { bar: 'baz' },
         hello() {
@@ -967,7 +967,7 @@ describe('#handle()', () => {
       ]);
     });
 
-    it('proxify the instance with a new Mock if proxifyNewInstance set to true', () => {
+    it('proxify the instance with a new Mock if mockNewInstance set to true', () => {
       class Foo {
         // eslint-disable-next-line class-methods-use-this
         bar() {
@@ -1000,14 +1000,14 @@ describe('#handle()', () => {
       expect(foo2.mock.options).toEqual(mock.options);
     });
 
-    it('keep the original instnce if proxifyNewInstance set to false', () => {
+    it('keep the original instnce if mockNewInstance set to false', () => {
       class Foo {
         // eslint-disable-next-line class-methods-use-this
         bar() {
           return 'baz';
         }
       }
-      const mock = new Mock({ proxifyNewInstance: false });
+      const mock = new Mock({ mockNewInstance: false });
       const MoxiedFoo = mock.proxify(Foo);
 
       const foo = new MoxiedFoo();
@@ -1083,8 +1083,8 @@ describe('#handle()', () => {
       ]);
     });
 
-    it('proxify object returned with a new Mock if proxifyReturnValue set to true', () => {
-      const mock = new Mock();
+    it('proxify object returned with a new Mock if mockReturnValue set to true', () => {
+      const mock = new Mock({ mockReturnValue: true });
       const moxied = mock.proxify(id => ({ id }));
 
       const obj1 = moxied(1);
@@ -1102,8 +1102,8 @@ describe('#handle()', () => {
       expect(obj2.mock).not.toBe(obj1.mock);
     });
 
-    it('proxify function returned with a new Mock if proxifyReturnValue set to true', () => {
-      const mock = new Mock();
+    it('proxify function returned with a new Mock if mockReturnValue set to true', () => {
+      const mock = new Mock({ mockReturnValue: true });
       const moxied = mock.proxify(a => b => a + b);
 
       const fn1 = moxied(1);
@@ -1126,9 +1126,9 @@ describe('#handle()', () => {
     it('does not proxify promise returned but the resolved value', async () => {
       const result = { hello: 'world' };
       const promise = Promise.resolve(result);
-      const moxied = moxy();
 
-      moxied.mock.fake(() => promise);
+      const mock = new Mock({ mockReturnValue: true });
+      const moxied = mock.proxify(() => promise);
 
       expect(moxied()).toBeInstanceOf(Promise);
       expect(isMoxy(moxied())).toBe(false);
@@ -1163,9 +1163,9 @@ describe('#handle()', () => {
       expect(moxied.mock.calls[0].result).toBe(returnedValue);
     });
 
-    it('keep original return value if proxifyReturnValue set to false', () => {
+    it('keep original return value if mockReturnValue set to false', () => {
       const retrunedObj = {};
-      const mock = new Mock({ proxifyReturnValue: false });
+      const mock = new Mock({ mockReturnValue: false });
       const moxied = mock.proxify(() => retrunedObj);
 
       expect(moxied()).toBe(retrunedObj);

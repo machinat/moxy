@@ -32,11 +32,11 @@ export default class Mock {
     const defaultOptions = {
       accessKey: 'mock',
       middlewares: null,
-      proxifyReturnValue: true,
-      proxifyNewInstance: true,
-      proxifyProperties: true,
-      includeProperties: null,
-      excludeProperties: null,
+      mockReturnValue: false,
+      mockNewInstance: true,
+      mockProperty: true,
+      includeProps: null,
+      excludeProps: null,
       recordGetter: false,
       recordSetter: false,
     };
@@ -253,7 +253,7 @@ export default class Mock {
         try {
           let instance = Reflect.construct(implementation, args, newTarget);
 
-          if (this.options.proxifyNewInstance) {
+          if (this.options.mockNewInstance) {
             instance = this._getProxified(instance);
           }
 
@@ -276,7 +276,7 @@ export default class Mock {
         try {
           let result = Reflect.apply(<Function>implementation, thisArg, args);
 
-          if (this.options.proxifyReturnValue) {
+          if (this.options.mockReturnValue) {
             // prettier-ignore
             result = isProxifiable(result)
               ? this._getProxified(result)
@@ -352,14 +352,12 @@ export default class Mock {
   _shouldProxifyProp(name) {
     const { options } = this;
     if (
-      !options.proxifyProperties ||
-      (options.excludeProperties && options.excludeProperties.includes(name))
+      !options.mockProperty ||
+      (options.excludeProps && options.excludeProps.includes(name))
     ) {
       return false;
     }
-    return (
-      !options.includeProperties || options.includeProperties.includes(name)
-    );
+    return !options.includeProps || options.includeProps.includes(name);
   }
 
   _getImplementation(source?: Function) {

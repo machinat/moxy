@@ -29,12 +29,6 @@ export const concatOptions = (
   ...base,
   ...next,
   middlewares: concatIfBothExists(base.middlewares, next.middlewares),
-  includeProperties: concatIfBothExists(
-    base.includeProperties,
-    next.includeProperties
-  ),
-  excludeProperties: concatIfBothExists(
-    base.excludeProperties,
-    next.excludeProperties
-  ),
+  includeProps: concatIfBothExists(base.includeProps, next.includeProps),
+  excludeProps: concatIfBothExists(base.excludeProps, next.excludeProps),
 });

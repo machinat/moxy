@@ -23,11 +23,11 @@ it('use default options provided to create Mock', () => {
   const options = {
     accessKey: 'myMock',
     middlewares: [handler => handler],
-    proxifyReturnValue: false,
-    proxifyNewInstance: false,
-    proxifyProperties: false,
-    includeProperties: ['foo'],
-    excludeProperties: ['bar'],
+    mockReturnValue: false,
+    mockNewInstance: false,
+    mockProperty: false,
+    includeProps: ['foo'],
+    excludeProps: ['bar'],
     recordGetter: true,
     recordSetter: true,
   };
@@ -41,11 +41,11 @@ it('use create time options provided to create Mock', () => {
   const options = {
     accessKey: 'myMock',
     middlewares: [handler => handler],
-    proxifyReturnValue: false,
-    proxifyNewInstance: false,
-    proxifyProperties: false,
-    includeProperties: ['foo'],
-    excludeProperties: ['bar'],
+    mockReturnValue: false,
+    mockNewInstance: false,
+    mockProperty: false,
+    includeProps: ['foo'],
+    excludeProps: ['bar'],
     recordGetter: true,
     recordSetter: true,
   };
@@ -59,17 +59,17 @@ it('extends the default options with create time options', () => {
   const defaultOptions = {
     accessKey: 'myMock',
     middlewares: [handler => handler],
-    proxifyReturnValue: false,
-    proxifyNewInstance: false,
-    includeProperties: ['foo'],
+    mockReturnValue: false,
+    mockNewInstance: false,
+    includeProps: ['foo'],
     recordGetter: true,
   };
 
   const createTimeOptions = {
     accessKey: 'myOwnMock',
-    proxifyNewInstance: true,
-    proxifyProperties: true,
-    excludeProperties: ['bar'],
+    mockNewInstance: true,
+    mockProperty: true,
+    excludeProps: ['bar'],
     recordSetter: true,
   };
 
@@ -78,11 +78,11 @@ it('extends the default options with create time options', () => {
   expect(moxied.myOwnMock.options).toEqual({
     accessKey: 'myOwnMock',
     middlewares: defaultOptions.middlewares,
-    proxifyReturnValue: false,
-    proxifyNewInstance: true,
-    proxifyProperties: true,
-    includeProperties: ['foo'],
-    excludeProperties: ['bar'],
+    mockReturnValue: false,
+    mockNewInstance: true,
+    mockProperty: true,
+    includeProps: ['foo'],
+    excludeProps: ['bar'],
     recordGetter: true,
     recordSetter: true,
   });
@@ -91,14 +91,14 @@ it('extends the default options with create time options', () => {
 it('concat the array options', () => {
   const defaultOptions = {
     middlewares: [handler => handler],
-    includeProperties: ['foo1', 'foo2'],
-    excludeProperties: ['bar1'],
+    includeProps: ['foo1', 'foo2'],
+    excludeProps: ['bar1'],
   };
 
   const createTimeOptions = {
     middlewares: [handler => handler],
-    includeProperties: ['foo3'],
-    excludeProperties: ['bar2', 'bar3'],
+    includeProps: ['foo3'],
+    excludeProps: ['bar2', 'bar3'],
   };
 
   const moxied = factory(defaultOptions)({}, createTimeOptions);
@@ -109,11 +109,11 @@ it('concat the array options', () => {
       defaultOptions.middlewares[0],
       createTimeOptions.middlewares[0],
     ],
-    proxifyReturnValue: true,
-    proxifyNewInstance: true,
-    proxifyProperties: true,
-    includeProperties: ['foo1', 'foo2', 'foo3'],
-    excludeProperties: ['bar1', 'bar2', 'bar3'],
+    mockReturnValue: false,
+    mockNewInstance: true,
+    mockProperty: true,
+    includeProps: ['foo1', 'foo2', 'foo3'],
+    excludeProps: ['bar1', 'bar2', 'bar3'],
     recordGetter: false,
     recordSetter: false,
   });
