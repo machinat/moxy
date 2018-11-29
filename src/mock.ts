@@ -4,6 +4,7 @@ import {
   clearAllPropOfMocks,
   isProxifiable,
   isFunctionProp,
+  formatUnproxifiable,
 } from './utils';
 
 import {
@@ -59,7 +60,7 @@ export default class Mock {
   proxify(source: Proxifiable): any {
     if (!isProxifiable(source)) {
       throw new TypeError(
-        'Cannot create proxy with a non-object as target or handler'
+        `Cannot create a proxy with ${formatUnproxifiable(source)}`
       );
     }
 

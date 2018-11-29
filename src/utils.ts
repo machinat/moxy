@@ -32,3 +32,13 @@ export const concatOptions = (
   includeProps: concatIfBothExists(base.includeProps, next.includeProps),
   excludeProps: concatIfBothExists(base.excludeProps, next.excludeProps),
 });
+
+export const formatUnproxifiable = s =>
+  // prettier-ignore
+  typeof s === 'string'
+    ? `"${s}"`
+    : typeof s === 'symbol'
+    ? s.toString()
+    : s instanceof Promise
+    ? 'a Promise'
+    : s;
