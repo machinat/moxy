@@ -22,7 +22,11 @@ it('throw if primitive type passed as target', () => {
 
   illegalTargets.forEach(target => {
     expect(() => moxy(<any>target)).toThrow(
-      'Cannot create proxy with a non-object as target or handler'
+      new TypeError(
+        `Cannot create a proxy with ${
+          typeof target === 'string' ? JSON.stringify(target) : String(target)
+        }`
+      )
     );
   });
 });

@@ -308,7 +308,6 @@ export default class Mock {
           // NOTE: descriptor from source should be configurable and writable
           //       since it is a mock.
           configurable: true,
-          writable: true,
         },
 
       getPrototypeOf: target =>

@@ -1194,7 +1194,7 @@ describe('#handle()', () => {
       });
     });
 
-    it('returns descriptor of source as configurable and writable', () => {
+    it('returns descriptor of source as configurable', () => {
       const mock = new Mock();
       const source = {};
       Object.defineProperty(source, 'foo', {
@@ -1210,7 +1210,7 @@ describe('#handle()', () => {
         value: 'bar',
         enumerable: false,
         configurable: true,
-        writable: true,
+        writable: false,
       });
     });
 
