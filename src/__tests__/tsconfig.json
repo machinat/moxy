@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2017",
+    "outDir": "lib",
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "noImplicitUseStrict": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  }
+}

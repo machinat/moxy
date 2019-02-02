@@ -753,6 +753,27 @@ describe('#handle()', () => {
       expect(moxied.hello.mock).toBe(undefined);
     });
 
+    it('work if original prop has a getter', () => {
+      const mock = new Mock();
+      const moxied = mock.proxify({
+        _foo: 'bar',
+        _fool: 'barz',
+        get foo() {
+          return this._foo;
+        },
+      });
+
+      expect(moxied.foo).toBe('bar');
+
+      moxied._foo = 'baz';
+      expect(moxied.foo).toBe('baz');
+
+      moxied.mock.getter('foo').fake(function getFooled() {
+        return this._fool;
+      });
+      expect(moxied.foo).toBe('barz');
+    });
+
     it('does not proxify Function.prototype', () => {
       class Fn {
         static someStaticMethod() {}
@@ -839,6 +860,39 @@ describe('#handle()', () => {
       expect(setFooMock.calls).toEqual([
         new Call({ args: ['foooo'], instance: moxied }),
       ]);
+    });
+
+    it('work if original prop has a setter', () => {
+      const source = {
+        _foo: 'bar',
+        set foo(val) {
+          this._foo = val;
+        },
+      };
+
+      const mock = new Mock();
+      const moxied = mock.proxify({
+        set foo(val) {
+          this._foo = val;
+        },
+      });
+
+      moxied.foo = 'baz';
+      expect(moxied._foo).toBe('baz');
+      expect(source._foo).toBe('bar');
+
+      moxied.mock.setter('foo').fake(function setFooled(val) {
+        this._fool = val;
+      });
+
+      moxied.foo = 'barz';
+      expect(moxied._fool).toBe('barz');
+      expect('_fool' in source).toBe(false);
+      expect(moxied._foo).toBe('baz');
+      expect(source._foo).toBe('bar');
+
+      expect(source.foo).toBe(undefined);
+      expect(moxied.foo).toBe(undefined);
     });
   });
 
@@ -1231,6 +1285,29 @@ describe('#handle()', () => {
         configurable: false,
         writable: false,
       });
+    });
+
+    it('returns undefined prop not found in both', () => {
+      const mock = new Mock();
+      const source = { foo: 'bar' };
+
+      const moxied = mock.proxify(source);
+      expect(Object.getOwnPropertyDescriptor(moxied, 'bar')).toBe(undefined);
+    });
+  });
+
+  describe('handler.ownKeys()', () => {
+    it('returns both target and source keys without duplicated', () => {
+      const mock = new Mock();
+      const source = { foo: 'foo', bar: 'bar' };
+
+      const moxied = mock.proxify(source);
+      moxied.baz = 'baz';
+      moxied.foo = 'fool';
+
+      const keys = Reflect.ownKeys(moxied);
+      expect(keys.length).toBe(3);
+      expect(keys).toEqual(expect.arrayContaining(['foo', 'bar', 'baz']));
     });
   });
 

@@ -5,6 +5,7 @@ import {
   isProxifiable,
   isFunctionProp,
   formatUnproxifiable,
+  checkPropIsSetter,
 } from './utils';
 
 import {
@@ -22,8 +23,8 @@ export default class Mock {
   options: MockOptions;
 
   _calls: Array<Call>;
-  _targetSourceMapping: WeakMap<Proxifiable, Proxifiable>;
   _proxifiedValueCache: WeakMap<Proxifiable, Proxifiable>;
+
   getterMocks: PropMockMapping;
   setterMocks: PropMockMapping;
   _defaultWrapper: Function;
@@ -48,7 +49,6 @@ export default class Mock {
     };
 
     this.reset();
-    this._targetSourceMapping = new WeakMap();
   }
 
   get calls() {
@@ -191,18 +191,19 @@ export default class Mock {
 
         const call = new Call({ instance: receiver });
 
-        const shouldReturnNativeProp = isFunctionProp(source, propKey);
+        const shouldGetFromSource = isFunctionProp(source, propKey);
         try {
           let property = implementation
             ? Reflect.apply(implementation, receiver, [])
             : Reflect.get(
-                !shouldReturnNativeProp && propKey in target ? target : source,
-                propKey
+                !shouldGetFromSource && propKey in target ? target : source,
+                propKey,
+                receiver
               );
 
           if (
             this._shouldProxifyProp(propKey) &&
-            !shouldReturnNativeProp &&
+            !shouldGetFromSource &&
             isProxifiable(property)
           ) {
             property = this._getProxified(property);
@@ -230,12 +231,14 @@ export default class Mock {
         const call = new Call({ args: [value], instance: receiver });
 
         try {
-          if (implementation === undefined) {
-            return Reflect.set(target, propKey, value);
+          if (implementation !== undefined) {
+            call.result = Reflect.apply(implementation, receiver, [value]);
+            return true;
           }
 
-          call.result = Reflect.apply(implementation, receiver, [value]);
-          return true;
+          return checkPropIsSetter(source, propKey)
+            ? Reflect.set(source, propKey, value, receiver)
+            : Reflect.set(target, propKey, value);
         } catch (err) {
           call.isThrow = true;
           call.result = err;
@@ -302,13 +305,18 @@ export default class Mock {
         }
       },
 
-      getOwnPropertyDescriptor: (target, prop) =>
-        Reflect.getOwnPropertyDescriptor(target, prop) || {
-          ...Reflect.getOwnPropertyDescriptor(source, prop),
-          // NOTE: descriptor from source should be configurable and writable
-          //       since it is a mock.
-          configurable: true,
-        },
+      getOwnPropertyDescriptor: (target, prop) => {
+        const targetDesc = Reflect.getOwnPropertyDescriptor(target, prop);
+        if (targetDesc) return targetDesc;
+
+        const sourceDesc = Reflect.getOwnPropertyDescriptor(source, prop);
+        return (
+          sourceDesc && {
+            ...sourceDesc,
+            configurable: true,
+          }
+        );
+      },
 
       getPrototypeOf: target =>
         (typeof source === 'object' && Reflect.getPrototypeOf(target)) ||
@@ -317,8 +325,11 @@ export default class Mock {
       has: (target, prop) =>
         Reflect.has(target, prop) || Reflect.has(source, prop),
 
-      ownKeys: target =>
-        Reflect.ownKeys(target).concat(Reflect.ownKeys(source)),
+      ownKeys: target => [
+        ...new Set(
+          Reflect.ownKeys(target).concat(Reflect.ownKeys(source))
+        ).values(),
+      ],
     };
   }
 

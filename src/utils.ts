@@ -42,3 +42,20 @@ export const formatUnproxifiable = s =>
     : s instanceof Promise
     ? 'a Promise'
     : s;
+
+export const checkPropIsSetter = (
+  obj: Object,
+  prop: string | symbol | number
+) => {
+  let target = obj;
+  // eslint-disable-next-line no-cond-assign
+  do {
+    const desc = Object.getOwnPropertyDescriptor(target, prop);
+
+    if (desc !== undefined) {
+      return desc.set !== undefined;
+    }
+  } while ((target = Object.getPrototypeOf(target)) !== null);
+
+  return false;
+};
