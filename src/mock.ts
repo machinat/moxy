@@ -1,7 +1,7 @@
 import Call from './call';
 import {
   createProxyTargetDouble,
-  clearAllPropOfMocks,
+  clearPropMockMapping,
   isProxifiable,
   isFunctionProp,
   formatUnproxifiable,
@@ -13,6 +13,7 @@ import {
   Proxifiable,
   PropMockMapping,
   MockOptionsInput,
+  ProxifiedCache,
 } from './type';
 
 const IS_MOXY = Symbol('is_moxy');
@@ -23,7 +24,8 @@ export default class Mock {
   options: MockOptions;
 
   _calls: Array<Call>;
-  _proxifiedValueCache: WeakMap<Proxifiable, Proxifiable>;
+  _proxifiedValues: ProxifiedCache;
+  _proxifiedProps: ProxifiedCache;
 
   getterMocks: PropMockMapping;
   setterMocks: PropMockMapping;
@@ -88,21 +90,30 @@ export default class Mock {
 
   clear() {
     this._initCalls();
+    this._proxifiedValues = new Map();
 
-    this._proxifiedValueCache = new WeakMap();
-    clearAllPropOfMocks(this.getterMocks);
-    clearAllPropOfMocks(this.setterMocks);
+    // clear also mock of proxified props
+    for (const proxiedProp of this._proxifiedProps.values()) {
+      proxiedProp[this.options.accessKey].clear();
+    }
+
+    clearPropMockMapping(this.getterMocks);
+    clearPropMockMapping(this.setterMocks);
     return this;
   }
 
   reset() {
     this._initCalls();
 
-    this._proxifiedValueCache = new WeakMap();
+    this._proxifiedValues = new Map();
+    this._proxifiedProps = new Map();
+
     this.getterMocks = {};
     this.setterMocks = {};
+
     this._wrapQueue = [];
     this._defaultWrapper = undefined;
+
     return this;
   }
 
@@ -206,7 +217,7 @@ export default class Mock {
             !shouldGetFromSource &&
             isProxifiable(property)
           ) {
-            property = this._getProxified(property);
+            property = this._getProxified(this._proxifiedProps, property);
           }
 
           return (call.result = property);
@@ -258,7 +269,7 @@ export default class Mock {
           let instance = Reflect.construct(implementation, args, newTarget);
 
           if (this.options.mockNewInstance) {
-            instance = this._getProxified(instance);
+            instance = this._getProxified(this._proxifiedValues, instance);
           }
 
           return (call.instance = instance);
@@ -283,11 +294,11 @@ export default class Mock {
           if (this.options.mockReturnValue) {
             // prettier-ignore
             result = isProxifiable(result)
-              ? this._getProxified(result)
+              ? this._getProxified(this._proxifiedValues, result)
               : result instanceof Promise
               ? new Promise((resolve, reject) =>
                   result
-                    .then(r => (isProxifiable(r) ? this._getProxified(r) : r))
+                    .then(r => (isProxifiable(r) ? this._getProxified(this._proxifiedValues, r) : r))
                     .then(resolve)
                     .catch(reject)
                 )
@@ -333,17 +344,17 @@ export default class Mock {
     };
   }
 
-  _getProxified(target) {
+  _getProxified(cache: ProxifiedCache, target) {
     if (isMoxy(target)) return target;
 
-    if (this._proxifiedValueCache.has(target)) {
-      return this._proxifiedValueCache.get(target);
+    if (cache.has(target)) {
+      return cache.get(target);
     }
 
     const childMock = new Mock(this.options);
 
     const proxified = childMock.proxify(target);
-    this._proxifiedValueCache.set(target, proxified);
+    cache.set(target, proxified);
 
     return proxified;
   }

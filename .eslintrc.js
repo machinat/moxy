@@ -16,6 +16,9 @@ module.exports = {
     'no-underscore-dangle': 0,
     'no-nested-ternary': 0,
     'no-return-assign': ['error', 'except-parens'],
+    'no-restricted-syntax': ['error',
+      'ForInStatement', 'LabeledStatement', 'WithStatement'
+    ],
     'lines-between-class-members': ['error', 'always', {
       exceptAfterSingleLine: true,
     }],

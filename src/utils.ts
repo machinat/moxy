@@ -3,8 +3,9 @@ import { PropMockMapping, Proxifiable, MockOptionsInput } from './type';
 export const createProxyTargetDouble = (source: Proxifiable): Proxifiable =>
   typeof source === 'function' ? function moxyDouble() {} : Object.create(null);
 
-export const clearAllPropOfMocks = (mapping: PropMockMapping) => {
-  Object.keys(mapping).forEach(k => {
+export const clearPropMockMapping = (mapping: PropMockMapping) => {
+  Reflect.ownKeys(mapping).forEach(k => {
+    // @ts-ignore wait for symbol index supported
     mapping[k].clear();
   });
 };

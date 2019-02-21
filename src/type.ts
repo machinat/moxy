@@ -7,7 +7,7 @@ export type MoxyFunc = (
 
 // eslint-disable-next-line typescript/no-use-before-define
 export type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
-// FIXME: wait Microsoft/TypeScript#26797 to support 👆
+// FIXME: wait for Microsoft/TypeScript#26797 to support 👆
 export type Proxifiable = object | Function;
 
 export type ProxyMiddleware = (
@@ -29,3 +29,5 @@ export type MockOptions = {
 };
 
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
+
+export type ProxifiedCache = Map<Proxifiable, Proxifiable>;

@@ -371,10 +371,10 @@ describe('#clear()', () => {
 
   it('empty calls', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => {});
+    const fn = mock.proxify(() => {});
 
-    moxied();
-    moxied();
+    fn();
+    fn();
 
     expect(mock.calls.length).toBe(2);
 
@@ -383,32 +383,57 @@ describe('#clear()', () => {
   });
 
   it('empty proxified values cached', () => {
+    const result = { foo: 'bar' };
     const mock = new Mock({ mockReturnValue: true });
-    const moxied = mock.proxify(() => {});
+    const fn = mock.proxify(() => result);
 
-    const fixed = {};
-    mock.fakeReturnValue(fixed);
+    const r1 = fn();
+    expect(r1).toEqual(result);
+    expect(r1).not.toBe(result);
+    expect(fn()).toBe(r1);
+    expect(fn.mock.calls.length).toBe(2);
 
-    const returned1 = moxied();
-    const returned2 = moxied();
+    fn.mock.clear();
+    expect(fn.mock.calls.length).toBe(0);
 
-    expect(returned1).toBe(returned2);
+    const r2 = fn();
+    expect(r2).toEqual(result);
+    expect(r2).not.toBe(result);
+    expect(fn()).toBe(r2);
+    expect(r2).not.toBe(r1);
+  });
+
+  it('clear mock of moxied props too', () => {
+    const mock = new Mock();
+    const obj = mock.proxify({ foo: () => 'bar' });
+
+    const { foo: moxiedFoo } = obj;
+    expect(isMoxy(moxiedFoo)).toBe(true);
+
+    expect(moxiedFoo()).toBe('bar');
+    expect(moxiedFoo.mock.calls.length).toBe(1);
+
+    moxiedFoo.mock.fakeReturnValue('baz');
+    expect(moxiedFoo()).toBe('baz');
+    expect(moxiedFoo.mock.calls.length).toBe(2);
 
     mock.clear();
-    expect(moxied()).not.toBe(returned1);
+    expect(obj.foo).toBe(moxiedFoo);
+    expect(moxiedFoo.mock.calls.length).toBe(0);
+    expect(moxiedFoo()).toBe('baz');
   });
 
   it('keep faked implementations', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => {});
+    const fn = mock.proxify(() => {});
 
     mock.fake(() => 0);
-    moxied();
+    fn();
     mock.fakeOnce(() => 1);
 
     mock.clear();
-    expect(moxied()).toBe(1);
-    expect(moxied()).toBe(0);
+    expect(fn()).toBe(1);
+    expect(fn()).toBe(0);
   });
 
   it('clear all setterMocks and getterMocks too', () => {
@@ -444,10 +469,10 @@ describe('#reset()', () => {
 
   it('empty calls', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => {});
+    const fn = mock.proxify(() => {});
 
-    moxied();
-    moxied();
+    fn();
+    fn();
 
     expect(mock.calls.length).toBe(2);
 
@@ -455,20 +480,35 @@ describe('#reset()', () => {
     expect(mock.calls).toEqual([]);
   });
 
-  it('empty proxifiedCache', () => {
-    const mock = new Mock();
-    const moxied = mock.proxify(() => {});
-
+  it('cleans cache of proxified values', () => {
+    const mock = new Mock({ mockReturnValue: true });
     const fixed = {};
-    mock.fakeReturnValue(fixed);
+    const fn = mock.proxify(() => fixed);
 
-    const returned1 = moxied();
-    const returned2 = moxied();
+    const returned1 = fn();
+    const returned2 = fn();
 
+    expect(isMoxy(returned1)).toBe(true);
     expect(returned1).toBe(returned2);
 
     mock.reset();
-    expect(moxied()).not.toBe(returned1);
+    expect(fn()).not.toBe(returned1);
+  });
+
+  it('cleans cache of proxified props', () => {
+    const mock = new Mock();
+    const obj = mock.proxify({ foo: () => 'bar' });
+
+    const moxiedFoo = obj.foo;
+    expect(isMoxy(moxiedFoo)).toBe(true);
+    expect(moxiedFoo()).toBe('bar');
+
+    moxiedFoo.mock.fakeReturnValue('baz');
+    expect(moxiedFoo()).toBe('baz');
+
+    mock.reset();
+    expect(obj.foo()).toBe('bar');
+    expect(obj.foo).not.toBe(moxiedFoo);
   });
 
   it('empty setterMocks and getterMocks', () => {
@@ -1138,22 +1178,29 @@ describe('#handle()', () => {
     });
 
     it('proxify object returned with a new Mock if mockReturnValue set to true', () => {
+      const result = { foo: 'bar' };
       const mock = new Mock({ mockReturnValue: true });
-      const moxied = mock.proxify(id => ({ id }));
+      const fn = mock.proxify(() => result);
 
-      const obj1 = moxied(1);
-      expect(obj1).toEqual({ id: 1 });
-      expect(obj1.mock).toBeInstanceOf(Mock);
-      expect(obj1.mock.options).toEqual(mock.options);
-      expect(obj1.mock).not.toBe(mock);
+      const r1 = fn();
+      expect(r1).toEqual(result);
+      expect(r1).not.toBe(result);
+      expect(r1).toBe(fn());
+      expect(r1.mock).toBeInstanceOf(Mock);
+      expect(r1.mock.options).toEqual(mock.options);
+      expect(r1.mock).not.toBe(mock);
 
-      mock.fakeReturnValue({ id: 999 });
-      const obj2 = moxied(2);
-      expect(obj2).toEqual({ id: 999 });
-      expect(obj2.mock).toBeInstanceOf(Mock);
-      expect(obj2.mock.options).toEqual(mock.options);
-      expect(obj2.mock).not.toBe(mock);
-      expect(obj2.mock).not.toBe(obj1.mock);
+      const fakeResult = { foo: 'baz' };
+      mock.fakeReturnValue(fakeResult);
+
+      const r2 = fn();
+      expect(r2).toEqual(fakeResult);
+      expect(r2).not.toBe(fakeResult);
+      expect(r2).toBe(fn());
+      expect(r2.mock).toBeInstanceOf(Mock);
+      expect(r2.mock.options).toEqual(mock.options);
+      expect(r2.mock).not.toBe(mock);
+      expect(r2.mock).not.toBe(r1.mock);
     });
 
     it('proxify function returned with a new Mock if mockReturnValue set to true', () => {
