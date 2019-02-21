@@ -1,6 +1,6 @@
 {
   "name": "moxy",
-  "version": "0.1.0-3",
+  "version": "0.1.0-4",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -13,7 +13,7 @@
     "email": "zeldalink0515@gmail.com",
     "url": "https://github.com/lrills"
   },
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^23.3.9",
     "eslint": "^5.8.0",
