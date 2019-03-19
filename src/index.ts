@@ -16,6 +16,6 @@ moxy.setDefaultOptions = options => {
 };
 
 export default moxy;
-export { default as moxyFactory } from './factory';
+export { default as factory } from './factory';
 export { default as Mock, isMoxy } from './mock';
 export { default as Call } from './call';
