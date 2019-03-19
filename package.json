@@ -23,9 +23,9 @@
     "eslint-plugin-import": "^2.14.0",
     "eslint-plugin-prettier": "^3.0.0",
     "eslint-plugin-typescript": "^0.13.0",
-    "jest": "^23.6.0",
-    "prettier": "1.14.3",
-    "ts-jest": "^23.10.4",
+    "jest": "^24.5.0",
+    "prettier": "^1.16.4",
+    "ts-jest": "^24.0.0",
     "typescript": "^3.1.4",
     "typescript-eslint-parser": "^20.1.1"
   },
