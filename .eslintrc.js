@@ -1,15 +1,15 @@
 module.exports = {
-  parser: 'typescript-eslint-parser',
+  parser: '@typescript-eslint/parser',
   env: {
     jest: true,
   },
   plugins: [
     'prettier',
-    'typescript',
+    '@typescript-eslint',
   ],
   extends: [
     'airbnb-base',
-    'prettier',
+    'plugin:prettier/recommended',
   ],
   rules: {
     'no-undef': 0, // https://github.com/eslint/typescript-eslint-parser/issues/437
@@ -23,13 +23,9 @@ module.exports = {
       exceptAfterSingleLine: true,
     }],
     'prefer-arrow-callback': 0,
-    'prettier/prettier': ['error', {
-      trailingComma: 'es5',
-      singleQuote: true,
-    }],
     'import/extensions': 0,
     'no-use-before-define': 0,
-    'typescript/no-unused-vars': 'error',
+    '@typescript-eslint/no-unused-vars': 'error',
   },
   settings: {
     'import/resolver': {
