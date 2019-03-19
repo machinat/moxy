@@ -5,15 +5,17 @@ Object.defineProperties(Mock.prototype, {
   _isMockFunction: {
     value: true,
   },
+
   getMockName: {
     value: () => 'moxy',
   },
+
   mock: {
     get() {
       return {
         calls: this.calls.map(({ args }) => args),
         results: this.calls.map(({ isThrow, result }) => ({
-          isThrow,
+          type: isThrow ? 'throw' : 'return',
           value: result,
         })),
         instances: this.calls.map(({ instance }) => instance),

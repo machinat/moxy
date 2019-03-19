@@ -2,7 +2,7 @@ import { moxyFactory } from '../..';
 import attachJestFnMockProps from '../jest';
 
 const MOXY = Symbol('moxy');
-const moxy = moxyFactory({ accessKey: MOXY });
+const moxy = moxyFactory({ mockAccessKey: MOXY });
 
 function addAll(...args) {
   return args.reduce((acc, cur) => acc + cur, 0);
@@ -33,11 +33,11 @@ it('attaches required jest fn mock properties to Mock.prototype', () => {
     calls: [[], [1, 2, 3], [4, 5], [6], []],
     instances: [undefined, undefined, ins1, ins2, undefined],
     results: [
-      { isThrow: false, value: 0 },
-      { isThrow: false, value: 6 },
-      { isThrow: false, value: 9 },
-      { isThrow: false, value: undefined },
-      { isThrow: true, value: new Error('you are a bad number') },
+      { type: 'return', value: 0 },
+      { type: 'return', value: 6 },
+      { type: 'return', value: 9 },
+      { type: 'return', value: undefined },
+      { type: 'throw', value: new Error('you are a bad number') },
     ],
   });
 });
@@ -81,7 +81,7 @@ describe('attachJestFnMockProps middleware', () => {
     expect(fn.getMockName()).toBe('moxy');
     expect(fn.mock).toEqual({
       calls: [[1, 2, 3]],
-      results: [{ isThrow: false, value: 6 }],
+      results: [{ type: 'return', value: 6 }],
       instances: [undefined],
     });
   });
