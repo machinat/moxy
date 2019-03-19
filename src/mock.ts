@@ -42,7 +42,7 @@ export default class Mock {
       includeProps: null,
       excludeProps: null,
       recordGetter: false,
-      recordSetter: false,
+      recordSetter: true,
     };
 
     this.options = {

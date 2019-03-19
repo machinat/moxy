@@ -26,7 +26,7 @@ it('is a constructor', () => {
 });
 
 describe('#constructor(options)', () => {
-  it('configures options with default value', () => {
+  it('init with expected default value', () => {
     expect(new Mock().options).toEqual({
       mockAccessKey: 'mock',
       middlewares: null,
@@ -36,9 +36,11 @@ describe('#constructor(options)', () => {
       includeProps: null,
       excludeProps: null,
       recordGetter: false,
-      recordSetter: false,
+      recordSetter: true,
     });
+  });
 
+  it('init with all options replaceable', () => {
     const fullOptions = {
       mockAccessKey: 'MOCK',
       middlewares: [handler => handler],
@@ -50,8 +52,11 @@ describe('#constructor(options)', () => {
       recordGetter: true,
       recordSetter: true,
     };
-    expect(new Mock(fullOptions).options).toEqual(fullOptions);
 
+    expect(new Mock(fullOptions).options).toEqual(fullOptions);
+  });
+
+  it('init with options partially replaced', () => {
     expect(
       new Mock({
         mockAccessKey: 'moooock',
@@ -68,7 +73,7 @@ describe('#constructor(options)', () => {
       includeProps: ['foo', 'bar'],
       excludeProps: null,
       recordGetter: true,
-      recordSetter: false,
+      recordSetter: true,
     });
   });
 
