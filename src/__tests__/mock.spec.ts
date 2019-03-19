@@ -28,7 +28,7 @@ it('is a constructor', () => {
 describe('#constructor(options)', () => {
   it('configures options with default value', () => {
     expect(new Mock().options).toEqual({
-      accessKey: 'mock',
+      mockAccessKey: 'mock',
       middlewares: null,
       mockReturnValue: false,
       mockNewInstance: true,
@@ -40,7 +40,7 @@ describe('#constructor(options)', () => {
     });
 
     const fullOptions = {
-      accessKey: 'MOCK',
+      mockAccessKey: 'MOCK',
       middlewares: [handler => handler],
       mockReturnValue: false,
       mockNewInstance: false,
@@ -54,13 +54,13 @@ describe('#constructor(options)', () => {
 
     expect(
       new Mock({
-        accessKey: 'moooock',
+        mockAccessKey: 'moooock',
         mockReturnValue: false,
         includeProps: ['foo', 'bar'],
         recordGetter: true,
       }).options
     ).toEqual({
-      accessKey: 'moooock',
+      mockAccessKey: 'moooock',
       middlewares: null,
       mockReturnValue: false,
       mockNewInstance: true,
@@ -608,14 +608,14 @@ describe('#handle()', () => {
   });
 
   describe('handler.get()', () => {
-    it('returns the mock itself if getting options.accessKey', () => {
+    it('returns the mock itself if getting options.mockAccessKey', () => {
       const mock1 = new Mock();
       const moxied1 = mock1.proxify({});
 
       expect(moxied1.mock).toBe(mock1);
       expect('mock' in moxied1).toBe(false);
 
-      const mock2 = new Mock({ accessKey: 'myMock' });
+      const mock2 = new Mock({ mockAccessKey: 'myMock' });
       const moxied2 = mock2.proxify({});
 
       expect(moxied2.mock).toBe(undefined);
@@ -623,7 +623,7 @@ describe('#handle()', () => {
       expect('myMock' in moxied1).toBe(false);
 
       const MOCK = Symbol('mock');
-      const mock3 = new Mock({ accessKey: MOCK });
+      const mock3 = new Mock({ mockAccessKey: MOCK });
       const moxied3 = mock3.proxify({});
 
       expect(moxied3.mock).toBe(undefined);

@@ -21,7 +21,7 @@ it('returns a moxied empty function if no target provided', () => {
 
 it('use default options provided to create Mock', () => {
   const options = {
-    accessKey: 'myMock',
+    mockAccessKey: 'myMock',
     middlewares: [handler => handler],
     mockReturnValue: false,
     mockNewInstance: false,
@@ -39,7 +39,7 @@ it('use default options provided to create Mock', () => {
 
 it('use create time options provided to create Mock', () => {
   const options = {
-    accessKey: 'myMock',
+    mockAccessKey: 'myMock',
     middlewares: [handler => handler],
     mockReturnValue: false,
     mockNewInstance: false,
@@ -57,7 +57,7 @@ it('use create time options provided to create Mock', () => {
 
 it('extends the default options with create time options', () => {
   const defaultOptions = {
-    accessKey: 'myMock',
+    mockAccessKey: 'myMock',
     middlewares: [handler => handler],
     mockReturnValue: false,
     mockNewInstance: false,
@@ -66,7 +66,7 @@ it('extends the default options with create time options', () => {
   };
 
   const createTimeOptions = {
-    accessKey: 'myOwnMock',
+    mockAccessKey: 'myOwnMock',
     mockNewInstance: true,
     mockProperty: true,
     excludeProps: ['bar'],
@@ -76,7 +76,7 @@ it('extends the default options with create time options', () => {
   const moxied = factory(defaultOptions)({}, createTimeOptions);
 
   expect(moxied.myOwnMock.options).toEqual({
-    accessKey: 'myOwnMock',
+    mockAccessKey: 'myOwnMock',
     middlewares: defaultOptions.middlewares,
     mockReturnValue: false,
     mockNewInstance: true,
@@ -104,7 +104,7 @@ it('concat the array options', () => {
   const moxied = factory(defaultOptions)({}, createTimeOptions);
 
   expect(moxied.mock.options).toEqual({
-    accessKey: 'mock',
+    mockAccessKey: 'mock',
     middlewares: [
       defaultOptions.middlewares[0],
       createTimeOptions.middlewares[0],

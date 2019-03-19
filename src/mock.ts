@@ -34,7 +34,7 @@ export default class Mock {
 
   constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
-      accessKey: 'mock',
+      mockAccessKey: 'mock',
       middlewares: null,
       mockReturnValue: false,
       mockNewInstance: true,
@@ -94,7 +94,7 @@ export default class Mock {
 
     // clear also mock of proxified props
     for (const proxiedProp of this._proxifiedProps.values()) {
-      proxiedProp[this.options.accessKey].clear();
+      proxiedProp[this.options.mockAccessKey].clear();
     }
 
     clearPropMockMapping(this.getterMocks);
@@ -193,7 +193,7 @@ export default class Mock {
     return {
       get: (target, propKey, receiver) => {
         if (propKey === IS_MOXY) return true;
-        if (propKey === this.options.accessKey) {
+        if (propKey === this.options.mockAccessKey) {
           return this;
         }
 
@@ -232,7 +232,7 @@ export default class Mock {
       },
 
       set: (target, propKey, value, receiver) => {
-        if (propKey === this.options.accessKey) {
+        if (propKey === this.options.mockAccessKey) {
           return false;
         }
 

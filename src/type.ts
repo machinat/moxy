@@ -17,7 +17,7 @@ export type ProxyMiddleware = (
 ) => ProxyHandler<Proxifiable>;
 
 export type MockOptions = {
-  accessKey: string | symbol;
+  mockAccessKey: string | symbol;
   middlewares?: Array<ProxyMiddleware>;
   mockReturnValue: boolean;
   mockNewInstance: boolean;
