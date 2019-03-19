@@ -23,14 +23,14 @@ export const isMoxy = moxied => moxied[IS_MOXY] === true;
 export default class Mock {
   options: MockOptions;
 
-  _calls: Array<Call>;
+  _calls: Call[];
   _proxifiedValues: ProxifiedCache;
   _proxifiedProps: ProxifiedCache;
 
   getterMocks: PropMockMapping;
   setterMocks: PropMockMapping;
   _defaultWrapper: Function;
-  _wrapQueue: Array<Function>;
+  _wrapQueue: Function[];
 
   constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
@@ -292,15 +292,13 @@ export default class Mock {
           let result = Reflect.apply(<Function>implementation, thisArg, args);
 
           if (this.options.mockReturnValue) {
-            // prettier-ignore
             result = isProxifiable(result)
               ? this._getProxified(this._proxifiedValues, result)
               : result instanceof Promise
-              ? new Promise((resolve, reject) =>
-                  result
-                    .then(r => (isProxifiable(r) ? this._getProxified(this._proxifiedValues, r) : r))
-                    .then(resolve)
-                    .catch(reject)
+              ? result.then(r =>
+                  isProxifiable(r)
+                    ? this._getProxified(this._proxifiedValues, r)
+                    : r
                 )
               : result;
           }

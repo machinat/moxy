@@ -337,7 +337,7 @@ describe(`Faking methods
   });
 });
 
-describe(`#setter(prop)`, () => {
+describe('#setter(prop)', () => {
   it('returns mock instance of setter lazily created', () => {
     const mock = new Mock();
     mock.proxify({ foo: 'bar' });
@@ -350,7 +350,7 @@ describe(`#setter(prop)`, () => {
   });
 });
 
-describe(`#getter(prop)`, () => {
+describe('#getter(prop)', () => {
   it('returns mock instance of getter lazily created', () => {
     const mock = new Mock();
     mock.proxify({ foo: 'bar' });
@@ -1135,8 +1135,11 @@ describe('#handle()', () => {
 
       expect(moxied('world')).toBe('hello world');
 
-      // prettier-ignore
-      const reverse = str => str.split('').reverse().join('');
+      const reverse = str =>
+        str
+          .split('')
+          .reverse()
+          .join('');
       moxied.mock.fake(x => `hello ${reverse(x)}`);
 
       expect(moxied('world')).toBe('hello dlrow');

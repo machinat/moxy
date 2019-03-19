@@ -2,7 +2,7 @@ import { moxyFactory } from '../..';
 import attachJestFnMockProps from '../jest';
 
 const MOXY = Symbol('moxy');
-const moxy = moxyFactory({ mockAccessKey: MOXY });
+const moxy = moxyFactory({ accessKey: MOXY });
 
 function addAll(...args) {
   return args.reduce((acc, cur) => acc + cur, 0);

@@ -35,7 +35,6 @@ export const concatOptions = (
 });
 
 export const formatUnproxifiable = s =>
-  // prettier-ignore
   typeof s === 'string'
     ? `"${s}"`
     : typeof s === 'symbol'
