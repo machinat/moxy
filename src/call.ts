@@ -1,5 +1,5 @@
 interface CallInput {
-  args?: Array<any>;
+  args?: any[];
   result?: any;
   instance?: any;
   isThrow?: boolean;
@@ -7,13 +7,13 @@ interface CallInput {
 }
 
 export default class Call {
-  args: Array<any>;
-  result: any;
-  instance: any;
-  isThrow: boolean;
-  isConstructor: boolean;
+  public args: any[];
+  public result: any;
+  public instance: any;
+  public isThrow: boolean;
+  public isConstructor: boolean;
 
-  constructor({
+  public constructor({
     args = [],
     result,
     instance,

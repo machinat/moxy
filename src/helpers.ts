@@ -1,26 +1,26 @@
 import deepEqual from 'fast-deep-equal';
 import Mock from './mock';
 
-export const equal = (...expectedArgs) => (...actualArgs) =>
+export const equal = (...expectedArgs: any[]) => (...actualArgs: any[]) =>
   deepEqual(expectedArgs, actualArgs);
 
-export const beginWith = (...expectedArgs) => (...actualArgs) =>
+export const beginWith = (...expectedArgs: any[]) => (...actualArgs: any[]) =>
   deepEqual(expectedArgs, actualArgs.slice(0, expectedArgs.length));
 
-export const endWith = (...expectedArgs) => (...actualArgs) =>
+export const endWith = (...expectedArgs: any[]) => (...actualArgs: any[]) =>
   deepEqual(expectedArgs, actualArgs.slice(-expectedArgs.length));
 
-export const nthIs = (idx, expected) => (...actualArgs) =>
+export const nthIs = (idx: number, expected: any) => (...actualArgs: any[]) =>
   deepEqual(expected, actualArgs[idx]);
 
 export const mockCurryFunction = (mock: Mock) => (fn: Function) =>
-  function mockIntermediate(...args) {
+  function mockIntermediate(this: Function, ...args: any[]) {
     const result = Reflect.apply(fn, this, args);
     return typeof result === 'function' ? mock.proxify(result) : result;
   };
 
 export const mockNewInstance = (mock: Mock) => (fn: Function) =>
-  function mockInstance(...args) {
+  function mockInstance(...args: any[]) {
     const instance = Reflect.construct(fn, args, new.target);
 
     return mock.proxify(instance);

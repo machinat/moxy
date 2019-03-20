@@ -2,7 +2,7 @@ import Mock from './mock';
 import { concatOptions } from './utils';
 import { MockOptionsInput, MoxyFunc } from './type';
 
-function empty() {}
+function empty(): void {}
 
 const moxyFactory = (defaultOptions: MockOptionsInput = {}): MoxyFunc => (
   target,

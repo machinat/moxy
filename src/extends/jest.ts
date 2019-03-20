@@ -1,7 +1,7 @@
 import Mock from '../mock';
 import { ProxyMiddleware } from '../type';
 
-Object.defineProperties(Mock.prototype, {
+const JestFnDescriptor = {
   _isMockFunction: {
     value: true,
   },
@@ -12,23 +12,21 @@ Object.defineProperties(Mock.prototype, {
 
   mock: {
     get() {
+      const { calls } = (this as unknown) as Mock;
+
       return {
-        calls: this.calls.map(({ args }) => args),
-        results: this.calls.map(({ isThrow, result }) => ({
+        calls: calls.map(({ args }) => args),
+        results: calls.map(({ isThrow, result }) => ({
           type: isThrow ? 'throw' : 'return',
           value: result,
         })),
-        instances: this.calls.map(({ instance }) => instance),
+        instances: calls.map(({ instance }) => instance),
       };
     },
   },
-});
-
-const jestFnMockProps = {
-  _isMockFunction: true,
-  getMockName: true,
-  mock: true,
 };
+
+Object.defineProperties(Mock.prototype, JestFnDescriptor);
 
 const attachJestFnMockProps = (): ProxyMiddleware => (
   handler,
@@ -37,10 +35,11 @@ const attachJestFnMockProps = (): ProxyMiddleware => (
 ) => ({
   ...handler,
   get(target, propKey, receiver) {
-    if (jestFnMockProps[propKey]) {
+    if (propKey in JestFnDescriptor) {
+      // @ts-ignore it was mixed in
       return mock[propKey];
     }
-
+    // @ts-ignore handler.get() should exist
     return handler.get(target, propKey, receiver);
   },
 });

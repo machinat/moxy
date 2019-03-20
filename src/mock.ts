@@ -18,31 +18,34 @@ import {
 
 const IS_MOXY = Symbol('is_moxy');
 
-export const isMoxy = moxied => moxied[IS_MOXY] === true;
+export const isMoxy = (moxied: Proxifiable): boolean =>
+  // @ts-ignore it's Proxy magic
+  moxied[IS_MOXY] === true;
 
 export default class Mock {
-  options: MockOptions;
+  public options: MockOptions;
 
-  _calls: Call[];
-  _proxifiedValues: ProxifiedCache;
-  _proxifiedProps: ProxifiedCache;
+  private _calls!: Call[];
+  private _proxifiedValues!: ProxifiedCache;
+  private _proxifiedProps!: ProxifiedCache;
 
-  getterMocks: PropMockMapping;
-  setterMocks: PropMockMapping;
-  _defaultWrapper: Function;
-  _wrapQueue: Function[];
+  public getterMocks!: PropMockMapping;
+  public setterMocks!: PropMockMapping;
 
-  constructor(options: MockOptionsInput = {}) {
+  private _defaultWrapper: undefined | Function;
+  private _wrapQueue!: Function[];
+
+  public constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
       mockAccessKey: 'mock',
-      middlewares: null,
       mockReturnValue: false,
       mockNewInstance: true,
       mockProperty: true,
-      includeProps: null,
-      excludeProps: null,
       recordGetter: false,
       recordSetter: true,
+      middlewares: null,
+      includeProps: null,
+      excludeProps: null,
     };
 
     this.options = {
@@ -53,13 +56,13 @@ export default class Mock {
     this.reset();
   }
 
-  get calls() {
+  public get calls(): Call[] {
     // NOTE: returns a copy of _calls to prevent it keeps growing while deeply
     //       comparing the calls which might traverse through the moxied object
     return [...this._calls];
   }
 
-  proxify(source: Proxifiable): any {
+  public proxify(source: Proxifiable): Proxifiable {
     if (!isProxifiable(source)) {
       throw new TypeError(
         `Cannot create a proxy with ${formatUnproxifiable(source)}`
@@ -71,7 +74,7 @@ export default class Mock {
   }
 
   // FIXME: wait Microsoft/TypeScript#26797 to support👇
-  getter(prop: any /* number | string | symbol */) {
+  public getter(prop: any /* number | string | symbol */): Mock {
     if (Object.prototype.hasOwnProperty.call(this.getterMocks, prop)) {
       return this.getterMocks[prop];
     }
@@ -80,7 +83,7 @@ export default class Mock {
   }
 
   // FIXME: wait Microsoft/TypeScript#26797 to support👇
-  setter(prop: any /* number | string | symbol */) {
+  public setter(prop: any /* number | string | symbol */): Mock {
     if (Object.prototype.hasOwnProperty.call(this.setterMocks, prop)) {
       return this.setterMocks[prop];
     }
@@ -88,12 +91,13 @@ export default class Mock {
     return (this.setterMocks[prop] = new Mock());
   }
 
-  clear() {
+  public clear(): this {
     this._initCalls();
     this._proxifiedValues = new Map();
 
     // clear also mock of proxified props
     for (const proxiedProp of this._proxifiedProps.values()) {
+      // @ts-ignore it's Proxy magic
       proxiedProp[this.options.mockAccessKey].clear();
     }
 
@@ -102,7 +106,7 @@ export default class Mock {
     return this;
   }
 
-  reset() {
+  public reset(): this {
     this._initCalls();
 
     this._proxifiedValues = new Map();
@@ -117,25 +121,25 @@ export default class Mock {
     return this;
   }
 
-  wrap(wrapper: (Function) => Function) {
+  public wrap(wrapper: (fn: Function) => Function): this {
     this._defaultWrapper = wrapper;
     return this;
   }
 
-  wrapOnce(wrapper: Function) {
+  public wrapOnce(wrapper: Function): this {
     this._wrapQueue.push(wrapper);
     return this;
   }
 
-  fake(implementation: Function) {
+  public fake(implementation: Function): this {
     this.wrap(() => implementation);
     return this;
   }
 
-  fakeWhenArgs(matcher: Function, implementation: Function) {
+  public fakeWhenArgs(matcher: Function, implementation: Function): this {
     const lastFunctor = this._defaultWrapper;
 
-    const withArgsFunctor = source => (...args) => {
+    const withArgsFunctor = (source: Function) => (...args: any[]): any => {
       if (matcher(...args)) {
         return implementation(...args);
       }
@@ -147,49 +151,49 @@ export default class Mock {
     return this;
   }
 
-  fakeOnce(implementation: Function) {
+  public fakeOnce(implementation: Function): this {
     this.wrapOnce(() => implementation);
     return this;
   }
 
-  fakeReturnValue(val: any) {
+  public fakeReturnValue(val: any): this {
     this.wrap(() => () => val);
     return this;
   }
 
-  fakeReturnValueOnce(val: any) {
+  public fakeReturnValueOnce(val: any): this {
     this.wrapOnce(() => () => val);
     return this;
   }
 
-  handle(source: Proxifiable): ProxyHandler<Proxifiable> {
+  public handle(source: Proxifiable): ProxyHandler<Proxifiable> {
     const baseHandler = this._createBaseHandler(source);
 
     const requiredHandlerMethods = Object.keys(baseHandler);
 
-    if (this.options.middlewares) {
-      return this.options.middlewares.reduce((wrappedHandler, wrapper) => {
-        const handler = wrapper(wrappedHandler, source, this);
-
-        const lostMethod = requiredHandlerMethods.find(
-          method => !(method in handler)
-        );
-
-        if (lostMethod !== undefined) {
-          throw TypeError(
-            `handler.${lostMethod}() is required but lost in result of middleware ${wrapper.name ||
-              wrapper}`
-          );
-        }
-
-        return handler;
-      }, baseHandler);
+    if (this.options.middlewares === null) {
+      return baseHandler;
     }
 
-    return baseHandler;
+    return this.options.middlewares.reduce((wrappedHandler, wrapper) => {
+      const handler = wrapper(wrappedHandler, source, this);
+
+      const lostMethod = requiredHandlerMethods.find(
+        method => !(method in handler)
+      );
+
+      if (lostMethod !== undefined) {
+        throw TypeError(
+          `handler.${lostMethod}() is required but lost in result of middleware ${wrapper.name ||
+            wrapper}`
+        );
+      }
+
+      return handler;
+    }, baseHandler);
   }
 
-  _createBaseHandler(source: Proxifiable): ProxyHandler<Proxifiable> {
+  private _createBaseHandler(source: Proxifiable): ProxyHandler<Proxifiable> {
     return {
       get: (target, propKey, receiver) => {
         if (propKey === IS_MOXY) return true;
@@ -261,7 +265,7 @@ export default class Mock {
       },
 
       construct: (target, args, newTarget) => {
-        const implementation = this._getImplementation(<Function>source);
+        const implementation = this._getImplementation(source as Function);
 
         const call = new Call({ args, isConstructor: true });
 
@@ -284,12 +288,12 @@ export default class Mock {
       },
 
       apply: (target, thisArg, args) => {
-        const implementation = this._getImplementation(<Function>source);
+        const implementation = this._getImplementation(source as Function);
 
         const call = new Call({ args, instance: thisArg });
 
         try {
-          let result = Reflect.apply(<Function>implementation, thisArg, args);
+          let result = Reflect.apply(implementation, thisArg, args);
 
           if (this.options.mockReturnValue) {
             result = isProxifiable(result)
@@ -342,11 +346,15 @@ export default class Mock {
     };
   }
 
-  _getProxified(cache: ProxifiedCache, target) {
+  private _getProxified(
+    cache: ProxifiedCache,
+    target: Proxifiable
+  ): Proxifiable {
     if (isMoxy(target)) return target;
 
-    if (cache.has(target)) {
-      return cache.get(target);
+    const cached = cache.get(target);
+    if (cached !== undefined) {
+      return cached;
     }
 
     const childMock = new Mock(this.options);
@@ -357,7 +365,7 @@ export default class Mock {
     return proxified;
   }
 
-  _initCalls() {
+  private _initCalls(): void {
     // NOTE: to prevent infinity loops caused by _calls growing while deeply comparing mocks
     Object.defineProperties(this, {
       _calls: {
@@ -369,19 +377,25 @@ export default class Mock {
     });
   }
 
-  _shouldProxifyProp(name) {
+  private _shouldProxifyProp(key: number | string | symbol): boolean {
+    if (typeof key === 'number') return false;
+
     const { options } = this;
     if (
       !options.mockProperty ||
-      (options.excludeProps && options.excludeProps.includes(name))
+      (options.excludeProps !== null && options.excludeProps.includes(key))
     ) {
       return false;
     }
-    return !options.includeProps || options.includeProps.includes(name);
+
+    return !options.includeProps || options.includeProps.includes(key);
   }
 
-  _getImplementation(source?: Function) {
+  private _getImplementation(): undefined | Function;
+  private _getImplementation(source: Function): Function;
+  private _getImplementation(source?: Function): undefined | Function {
     if (this._wrapQueue.length > 0) {
+      // @ts-ignore length checked
       return this._wrapQueue.shift()(source);
     }
 

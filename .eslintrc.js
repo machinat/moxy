@@ -9,11 +9,12 @@ module.exports = {
   ],
   extends: [
     'airbnb-base',
+    'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
   ],
   rules: {
-    'no-undef': 0, // https://github.com/eslint/typescript-eslint-parser/issues/437
     'no-underscore-dangle': 0,
+    'no-dupe-class-members': 0,
     'no-nested-ternary': 0,
     'no-return-assign': ['error', 'except-parens'],
     'no-restricted-syntax': ['error',
@@ -24,8 +25,9 @@ module.exports = {
     }],
     'prefer-arrow-callback': 0,
     'import/extensions': 0,
-    'no-use-before-define': 0,
-    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/indent': 0,
+    '@typescript-eslint/no-explicit-any': 0,
+    '@typescript-eslint/explicit-function-return-type': 0,
   },
   settings: {
     'import/resolver': {

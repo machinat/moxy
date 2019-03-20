@@ -6,7 +6,9 @@ export type MoxyFunc = (
 ) => any;
 
 // eslint-disable-next-line typescript/no-use-before-define
-export type PropMockMapping = { [k: string /* | number | symbol */]: Mock };
+export interface PropMockMapping {
+  [k: string /* | number | symbol */]: Mock;
+}
 // FIXME: wait for Microsoft/TypeScript#26797 to support 👆
 export type Proxifiable = object | Function;
 
@@ -16,17 +18,17 @@ export type ProxyMiddleware = (
   mock: Mock
 ) => ProxyHandler<Proxifiable>;
 
-export type MockOptions = {
+export interface MockOptions {
   mockAccessKey: string | symbol;
-  middlewares?: Array<ProxyMiddleware>;
+  middlewares: null | ProxyMiddleware[];
   mockReturnValue: boolean;
   mockNewInstance: boolean;
   mockProperty: boolean;
-  includeProps?: Array<string | symbol>;
-  excludeProps?: Array<string | symbol>;
+  includeProps: null | (string | symbol)[];
+  excludeProps: null | (string | symbol)[];
   recordGetter: boolean;
   recordSetter: boolean;
-};
+}
 
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
 

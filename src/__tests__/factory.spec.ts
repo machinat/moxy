@@ -22,7 +22,7 @@ it('returns a moxied empty function if no target provided', () => {
 it('use default options provided to create Mock', () => {
   const options = {
     mockAccessKey: 'myMock',
-    middlewares: [handler => handler],
+    middlewares: [(handler: ProxyHandler<any>) => handler],
     mockReturnValue: false,
     mockNewInstance: false,
     mockProperty: false,
@@ -40,7 +40,7 @@ it('use default options provided to create Mock', () => {
 it('use create time options provided to create Mock', () => {
   const options = {
     mockAccessKey: 'myMock',
-    middlewares: [handler => handler],
+    middlewares: [(handler: ProxyHandler<any>) => handler],
     mockReturnValue: false,
     mockNewInstance: false,
     mockProperty: false,
@@ -58,7 +58,7 @@ it('use create time options provided to create Mock', () => {
 it('extends the default options with create time options', () => {
   const defaultOptions = {
     mockAccessKey: 'myMock',
-    middlewares: [handler => handler],
+    middlewares: [(handler: ProxyHandler<any>) => handler],
     mockReturnValue: false,
     mockNewInstance: false,
     includeProps: ['foo'],
@@ -90,13 +90,13 @@ it('extends the default options with create time options', () => {
 
 it('concat the array options', () => {
   const defaultOptions = {
-    middlewares: [handler => handler],
+    middlewares: [(handler: ProxyHandler<any>) => handler],
     includeProps: ['foo1', 'foo2'],
     excludeProps: ['bar1'],
   };
 
   const createTimeOptions = {
-    middlewares: [handler => handler],
+    middlewares: [(handler: ProxyHandler<any>) => handler],
     includeProps: ['foo3'],
     excludeProps: ['bar2', 'bar3'],
   };
@@ -115,6 +115,6 @@ it('concat the array options', () => {
     includeProps: ['foo1', 'foo2', 'foo3'],
     excludeProps: ['bar1', 'bar2', 'bar3'],
     recordGetter: false,
-    recordSetter: false,
+    recordSetter: true,
   });
 });

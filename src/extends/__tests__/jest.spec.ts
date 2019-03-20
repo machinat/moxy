@@ -4,7 +4,7 @@ import attachJestFnMockProps from '../jest';
 const MOXY = Symbol('moxy');
 const moxy = factory({ mockAccessKey: MOXY });
 
-function addAll(...args) {
+function addAll(...args: number[]): number {
   return args.reduce((acc, cur) => acc + cur, 0);
 }
 

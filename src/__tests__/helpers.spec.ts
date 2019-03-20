@@ -35,7 +35,7 @@ describe('equal', () => {
 
   it('work with mock.fakeWhenArgs()', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => 0);
+    const moxied: any = mock.proxify(() => 0);
 
     mock.fakeWhenArgs(equal(1, 2, 3), () => 1);
 
@@ -72,7 +72,7 @@ describe('beginWith', () => {
 
   it('work with mock.fakeWhenArgs()', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => 0);
+    const moxied: any = mock.proxify(() => 0);
 
     mock.fakeWhenArgs(beginWith(1, 2), () => 1);
 
@@ -113,7 +113,7 @@ describe('endWith', () => {
 
   it('work with mock.fakeWhenArgs()', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => 0);
+    const moxied: any = mock.proxify(() => 0);
 
     mock.fakeWhenArgs(endWith(2, 1), () => 1);
 
@@ -153,7 +153,7 @@ describe('nthIs', () => {
 
   it('work with mock.fakeWhenArgs()', () => {
     const mock = new Mock();
-    const moxied = mock.proxify(() => 0);
+    const moxied: any = mock.proxify(() => 0);
 
     mock.fakeWhenArgs(nthIs(1, 999), () => 1);
 
@@ -173,12 +173,13 @@ describe('mockNewInstance', () => {
     const instanceMock = new Mock();
 
     const classMock = new Mock().wrap(mockNewInstance(instanceMock));
-    const Foo = classMock.proxify(class { someMethod() {} }); // eslint-disable-line
+    class Foo { someMethod() { } } // eslint-disable-line
+    const MoxiedFoo: any = classMock.proxify(Foo);
 
-    const foo1 = new Foo();
+    const foo1 = new MoxiedFoo();
     expect(foo1.mock).toBe(instanceMock);
 
-    const foo2 = new Foo();
+    const foo2 = new MoxiedFoo();
     expect(foo2.mock).toBe(instanceMock);
 
     foo1.someMethod(1);
@@ -195,7 +196,9 @@ describe('mockNewInstance', () => {
 describe('mockCurryFunction', () => {
   it('work with mock.wrap()', () => {
     const mock = new Mock();
-    const curry = mock.proxify(a => b => c => a + b + c);
+    const curry: any = mock.proxify((a: number) => (b: number) => (c: number) =>
+      a + b + c
+    );
 
     expect(curry(1)(2)(3)).toBe(6);
 

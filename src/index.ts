@@ -3,12 +3,12 @@ import { MoxyFunc, MockOptionsInput } from './type';
 
 type MoxyModule = MoxyFunc & {
   defaultOptions: MockOptionsInput;
-  setDefaultOptions: (MockOptionsInput) => void;
+  setDefaultOptions: (options: MockOptionsInput) => void;
 };
 
 const defaultOptions = {};
 
-const moxy = <MoxyModule>moxyFactory(defaultOptions);
+const moxy = moxyFactory(defaultOptions) as MoxyModule;
 
 moxy.defaultOptions = defaultOptions;
 moxy.setDefaultOptions = options => {

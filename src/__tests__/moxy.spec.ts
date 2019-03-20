@@ -20,8 +20,8 @@ it('throw if primitive type passed as target', () => {
     Symbol(''),
   ];
 
-  illegalTargets.forEach(target => {
-    expect(() => moxy(<any>target)).toThrow(
+  illegalTargets.forEach((target: any) => {
+    expect(() => moxy(target)).toThrow(
       new TypeError(
         `Cannot create a proxy with ${
           typeof target === 'string' ? JSON.stringify(target) : String(target)
@@ -63,7 +63,7 @@ describe('empty mock', () => {
     ]);
 
     spy.mock.clear();
-    spy.mock.fake((...args) => args.join(' and '));
+    spy.mock.fake((...args: string[]) => args.join(' and '));
 
     expect(spy('foo', 'bar', 'baz')).toBe('foo and bar and baz');
     expect(spy.mock.calls).toEqual([
@@ -73,8 +73,10 @@ describe('empty mock', () => {
 });
 
 xtest('empty mock as an object', () => {
-  const greeting = agent => `Hello, ${agent.introduce()}`;
-  function introduce() {
+  const greeting = (agent: { introduce(): string }) =>
+    `Hello, ${agent.introduce()}`;
+
+  function introduce(this: { code: string }) {
     return `I'm ${this.code}.`;
   }
 
@@ -107,10 +109,11 @@ xtest('empty mock as an object', () => {
 });
 
 test('empty mock as a constructor', () => {
-  const greeting = (agent, name) => agent.sayHello(name);
+  const greeting = (agent: { sayHello(s: string): string }, name: string) =>
+    agent.sayHello(name);
 
   const Spy = moxy();
-  Spy.prototype.sayHello = name => `Hello, ${name}.`;
+  Spy.prototype.sayHello = (name: string) => `Hello, ${name}.`;
 
   const spy1 = new Spy(1);
   const spy2 = new Spy(2);
@@ -118,7 +121,7 @@ test('empty mock as a constructor', () => {
   greeting(spy1, 'John');
   greeting(spy2, 'Anny');
 
-  spy2.sayHello.mock.fake(name => `Greeting, ${name}.`);
+  spy2.sayHello.mock.fake((name: string) => `Greeting, ${name}.`);
   greeting(spy2, 'Anny');
 
   const expectedCalls = [
