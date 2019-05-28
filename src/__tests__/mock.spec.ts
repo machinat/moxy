@@ -7,16 +7,16 @@ declare let global: { Proxy: any };
 
 describe('isMoxy()', () => {
   it('tells if a target is moxied', () => {
-    function f() {}
-    const o = {};
-    expect(isMoxy(moxy(f))).toBe(true);
-    expect(isMoxy(moxy(o))).toBe(true);
+    function fn() {}
+    const obj = {};
+    expect(isMoxy(moxy(fn))).toBe(true);
+    expect(isMoxy(moxy(obj))).toBe(true);
 
-    expect(isMoxy(new Mock().proxify(f))).toBe(true);
-    expect(isMoxy(new Mock().proxify(o))).toBe(true);
+    expect(isMoxy(new Mock().proxify(fn))).toBe(true);
+    expect(isMoxy(new Mock().proxify(obj))).toBe(true);
 
-    expect(isMoxy(f)).toBe(false);
-    expect(isMoxy(o)).toBe(false);
+    expect(isMoxy(fn)).toBe(false);
+    expect(isMoxy(obj)).toBe(false);
   });
 });
 
@@ -733,45 +733,42 @@ describe('#handle()', () => {
     });
 
     it('proxify only props in includeProps if defined', () => {
+      const BEAR = Symbol('BEAR');
+      const BEER = Symbol('BEER');
       const mock = new Mock({
         mockProperty: true,
-        includeProps: ['foo'],
+        includeProps: ['ba*', BEER],
       });
 
-      const target = { foo: {}, bar: {} };
+      const target = { foo: {}, bar: {}, baz: {}, [BEAR]: {}, [BEER]: {} };
       const moxied: any = mock.proxify(target);
 
-      expect(moxied.foo).not.toBe(target.foo);
-      expect(moxied.foo.mock).toBeInstanceOf(Mock);
+      expect(moxied.foo).toBe(target.foo);
+      expect(moxied.foo.mock).toBe(undefined);
 
-      expect(moxied.bar).toBe(target.bar);
-      expect(moxied.bar.mock).toBe(undefined);
+      expect(moxied.bar).not.toBe(target.bar);
+      expect(moxied.bar.mock).toBeInstanceOf(Mock);
+
+      expect(moxied.baz).not.toBe(target.baz);
+      expect(moxied.baz.mock).toBeInstanceOf(Mock);
+
+      expect(moxied[BEAR]).toBe(target[BEAR]);
+      expect(moxied[BEAR].mock).toBe(undefined);
+
+      expect(moxied[BEER]).not.toBe(target[BEER]);
+      expect(moxied[BEER].mock).toBeInstanceOf(Mock);
     });
 
     it('proxify excluding props in excludeProps if defined', () => {
+      const BEAR = Symbol('BEAR');
+      const BEER = Symbol('BEER');
+
       const mock = new Mock({
         mockProperty: true,
-        excludeProps: ['bar'],
+        excludeProps: ['b*', BEER],
       });
 
-      const target = { foo: {}, bar: {} };
-      const moxied: any = mock.proxify(target);
-
-      expect(moxied.foo).not.toBe(target.foo);
-      expect(moxied.foo.mock).toBeInstanceOf(Mock);
-
-      expect(moxied.bar).toBe(target.bar);
-      expect(moxied.bar.mock).toBe(undefined);
-    });
-
-    test('excludeProps should take presedence of includeProps', () => {
-      const mock = new Mock({
-        mockProperty: true,
-        includeProps: ['foo', 'bar'],
-        excludeProps: ['bar', 'baz'],
-      });
-
-      const target = { foo: {}, bar: {}, baz: {} };
+      const target = { foo: {}, bar: {}, baz: {}, [BEAR]: {}, [BEER]: {} };
       const moxied: any = mock.proxify(target);
 
       expect(moxied.foo).not.toBe(target.foo);
@@ -782,6 +779,36 @@ describe('#handle()', () => {
 
       expect(moxied.baz).toBe(target.baz);
       expect(moxied.baz.mock).toBe(undefined);
+
+      expect(moxied[BEAR]).not.toBe(target[BEAR]);
+      expect(moxied[BEAR].mock).toBeInstanceOf(Mock);
+
+      expect(moxied[BEER]).toBe(target[BEER]);
+      expect(moxied[BEER].mock).toBe(undefined);
+    });
+
+    test('excludeProps should take presedence of includeProps', () => {
+      const BEER = Symbol('BEER');
+      const mock = new Mock({
+        mockProperty: true,
+        includeProps: ['foo', 'bar', BEER],
+        excludeProps: ['bar', 'baz', BEER],
+      });
+
+      const target = { foo: {}, bar: {}, baz: {}, [BEER]: {} };
+      const moxied: any = mock.proxify(target);
+
+      expect(moxied.foo).not.toBe(target.foo);
+      expect(moxied.foo.mock).toBeInstanceOf(Mock);
+
+      expect(moxied.bar).toBe(target.bar);
+      expect(moxied.bar.mock).toBe(undefined);
+
+      expect(moxied.baz).toBe(target.baz);
+      expect(moxied.baz.mock).toBe(undefined);
+
+      expect(moxied[BEER]).toBe(target[BEER]);
+      expect(moxied[BEER].mock).toBe(undefined);
     });
 
     it('returns orginal prop if mockProperty set to false', () => {

@@ -30,6 +30,7 @@
     "typescript": "^3.3.3333"
   },
   "dependencies": {
-    "fast-deep-equal": "^2.0.1"
+    "fast-deep-equal": "^2.0.1",
+    "micromatch": "^4.0.2"
   }
 }

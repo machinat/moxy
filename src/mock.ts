@@ -1,3 +1,5 @@
+import { isMatch as matchPatterns } from 'micromatch';
+
 import Call from './call';
 import {
   createProxyTargetDouble,
@@ -19,7 +21,7 @@ import {
 const IS_MOXY = Symbol('is_moxy');
 
 export const isMoxy = (moxied: Proxifiable): boolean =>
-  // @ts-ignore it's Proxy magic
+  // @ts-ignore it's Proxy magic!
   moxied[IS_MOXY] === true;
 
 export default class Mock {
@@ -34,6 +36,11 @@ export default class Mock {
 
   private _defaultWrapper: undefined | Function;
   private _wrapQueue!: Function[];
+
+  private _propWhitelistSymbols: symbol[];
+  private _propWhitelistPatterns: string[];
+  private _propBlacklistSymbols: symbol[];
+  private _propBlacklistPatterns: string[];
 
   public constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
@@ -52,6 +59,24 @@ export default class Mock {
       ...defaultOptions,
       ...options,
     };
+
+    const { includeProps, excludeProps } = this.options;
+
+    this._propWhitelistSymbols = includeProps
+      ? includeProps.filter((p): p is symbol => typeof p === 'symbol')
+      : [];
+
+    this._propWhitelistPatterns = includeProps
+      ? includeProps.filter((p): p is string => typeof p === 'string')
+      : [];
+
+    this._propBlacklistSymbols = excludeProps
+      ? excludeProps.filter((p): p is symbol => typeof p === 'symbol')
+      : [];
+
+    this._propBlacklistPatterns = excludeProps
+      ? excludeProps.filter((p): p is string => typeof p === 'string')
+      : [];
 
     this.reset();
   }
@@ -383,12 +408,19 @@ export default class Mock {
     const { options } = this;
     if (
       !options.mockProperty ||
-      (options.excludeProps !== null && options.excludeProps.includes(key))
+      (typeof key === 'string'
+        ? matchPatterns(key, this._propBlacklistPatterns)
+        : this._propBlacklistSymbols.includes(key))
     ) {
       return false;
     }
 
-    return !options.includeProps || options.includeProps.includes(key);
+    return (
+      !options.includeProps ||
+      (typeof key === 'string'
+        ? matchPatterns(key, this._propWhitelistPatterns)
+        : this._propWhitelistSymbols.includes(key))
+    );
   }
 
   private _getImplementation(): undefined | Function;
