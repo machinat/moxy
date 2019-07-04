@@ -557,7 +557,7 @@ describe('#reset()', () => {
 describe('#handle()', () => {
   it('returns a proxy handler', () => {
     const mock = new Mock();
-    const handler = mock.handle({});
+    const handler = mock.handle({}, {});
 
     expect(typeof handler).toBe('object');
     expect('set' in handler).toBe(true);
@@ -573,7 +573,7 @@ describe('#handle()', () => {
     const mock = new Mock({ middlewares });
 
     const source = {};
-    const handler = mock.handle(source);
+    const handler = mock.handle(source, {});
 
     expect(middlewares[0].mock.calls.length).toBe(1);
     expect(middlewares[1].mock.calls.length).toBe(1);
@@ -600,7 +600,7 @@ describe('#handle()', () => {
   });
 
   it('throw if original method lost in middleware result', () => {
-    const methodsShoudContain = Object.keys(new Mock().handle({}));
+    const methodsShoudContain = Object.keys(new Mock().handle({}, {}));
 
     methodsShoudContain.forEach(method => {
       const middleware = (handler: ProxyHandler<any>) => {
@@ -611,21 +611,23 @@ describe('#handle()', () => {
       };
 
       const mock = new Mock({ middlewares: [middleware] });
-      expect(() => mock.handle({})).toThrow();
+      expect(() => mock.handle({}, {})).toThrow();
     });
   });
 
   describe('handler.get()', () => {
-    it('returns the mock itself if getting options.mockAccessKey', () => {
+    it('returns the mock of itself while getting options.mockAccessKey', () => {
       const mock1 = new Mock();
       const moxied1: any = mock1.proxify({});
 
+      expect(isMoxy(moxied1)).toBe(true);
       expect(moxied1.mock).toBe(mock1);
       expect('mock' in moxied1).toBe(false);
 
       const mock2 = new Mock({ mockAccessKey: 'myMock' });
       const moxied2: any = mock2.proxify({});
 
+      expect(isMoxy(moxied2)).toBe(true);
       expect(moxied2.mock).toBe(undefined);
       expect(moxied2.myMock).toBe(mock2);
       expect('myMock' in moxied1).toBe(false);
@@ -634,12 +636,41 @@ describe('#handle()', () => {
       const mock3 = new Mock({ mockAccessKey: MOCK });
       const moxied3: any = mock3.proxify({});
 
+      expect(isMoxy(moxied3)).toBe(true);
       expect(moxied3.mock).toBe(undefined);
       expect(moxied3[MOCK]).toBe(mock3);
       expect(MOCK in moxied1).toBe(false);
     });
 
-    it('does not store getting prop records if recordGetter set to false', () => {
+    it('reveals as moxied only when get on the proxy itself but descendants', () => {
+      const mock = new Mock();
+      const father: any = mock.proxify({ foo: 'bar' });
+
+      expect(isMoxy(father)).toBe(true);
+      expect(father.mock).toBe(mock);
+      expect(father.foo).toBe('bar');
+
+      const child = Object.create(father);
+      expect(isMoxy(child)).toBe(false);
+      expect(child.mock).toBe(undefined);
+      expect(child.foo).toBe('bar');
+
+      const Mother: any = mock.proxify(
+        class Mother {
+          public static foo = 'bar';
+        }
+      );
+      expect(isMoxy(Mother)).toBe(true);
+      expect(Mother.mock).toBe(mock);
+      expect(Mother.foo).toBe('bar');
+
+      class Child extends Mother {}
+      expect(isMoxy(Child)).toBe(false);
+      expect(Child.mock).toBe(undefined);
+      expect(Child.foo).toBe('bar');
+    });
+
+    it('not store getting records if recordGetter set to false', () => {
       const mock = new Mock({ recordGetter: false });
       const moxied: any = mock.proxify({ foo: 'bar' });
 

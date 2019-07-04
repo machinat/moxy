@@ -94,8 +94,8 @@ export default class Mock {
       );
     }
 
-    const target = createProxyTargetDouble(source);
-    return new Proxy(target, this.handle(source));
+    const double = createProxyTargetDouble(source);
+    return new Proxy(double, this.handle(source, double));
   }
 
   // FIXME: wait Microsoft/TypeScript#26797 to support👇
@@ -191,8 +191,11 @@ export default class Mock {
     return this;
   }
 
-  public handle(source: Proxifiable): ProxyHandler<Proxifiable> {
-    const baseHandler = this._createBaseHandler(source);
+  public handle(
+    source: Proxifiable,
+    double: Proxifiable
+  ): ProxyHandler<Proxifiable> {
+    const baseHandler = this._createBaseHandler(source, double);
 
     const requiredHandlerMethods = Object.keys(baseHandler);
 
@@ -218,12 +221,18 @@ export default class Mock {
     }, baseHandler);
   }
 
-  private _createBaseHandler(source: Proxifiable): ProxyHandler<Proxifiable> {
+  private _createBaseHandler(
+    source: Proxifiable,
+    double: Proxifiable
+  ): ProxyHandler<Proxifiable> {
     return {
       get: (target, propKey, receiver) => {
-        if (propKey === IS_MOXY) return true;
-        if (propKey === this.options.mockAccessKey) {
-          return this;
+        // only report as moxied when get on the porxy itself but its descendants
+        if (target === double) {
+          if (propKey === IS_MOXY) return true;
+          if (propKey === this.options.mockAccessKey) {
+            return this;
+          }
         }
 
         const getterMock = this.getter(propKey);
