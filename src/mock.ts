@@ -28,8 +28,11 @@ export default class Mock {
   public options: MockOptions;
 
   private _calls!: Call[];
-  private _proxifiedValues!: ProxifiedCache;
-  private _proxifiedProps!: ProxifiedCache;
+
+  private _proxifiedOfDoubles: ProxifiedCache;
+
+  private _proxifiedOfValues!: ProxifiedCache;
+  private _proxifiedOfProps!: ProxifiedCache;
 
   public getterMocks!: PropMockMapping;
   public setterMocks!: PropMockMapping;
@@ -78,6 +81,8 @@ export default class Mock {
       ? excludeProps.filter((p): p is string => typeof p === 'string')
       : [];
 
+    this._proxifiedOfDoubles = new Map();
+
     this.reset();
   }
 
@@ -95,7 +100,10 @@ export default class Mock {
     }
 
     const double = createProxyTargetDouble(source);
-    return new Proxy(double, this.handle(source, double));
+    const proxified = new Proxy(double, this.handle(source));
+
+    this._proxifiedOfDoubles.set(double, proxified);
+    return proxified;
   }
 
   // FIXME: wait Microsoft/TypeScript#26797 to support👇
@@ -118,10 +126,10 @@ export default class Mock {
 
   public clear(): this {
     this._initCalls();
-    this._proxifiedValues = new Map();
+    this._proxifiedOfValues = new Map();
 
     // clear also mock of proxified props
-    for (const proxiedProp of this._proxifiedProps.values()) {
+    for (const proxiedProp of this._proxifiedOfProps.values()) {
       // @ts-ignore it's Proxy magic
       proxiedProp[this.options.mockAccessKey].clear();
     }
@@ -134,8 +142,8 @@ export default class Mock {
   public reset(): this {
     this._initCalls();
 
-    this._proxifiedValues = new Map();
-    this._proxifiedProps = new Map();
+    this._proxifiedOfValues = new Map();
+    this._proxifiedOfProps = new Map();
 
     this.getterMocks = {};
     this.setterMocks = {};
@@ -191,11 +199,8 @@ export default class Mock {
     return this;
   }
 
-  public handle(
-    source: Proxifiable,
-    double: Proxifiable
-  ): ProxyHandler<Proxifiable> {
-    const baseHandler = this._createBaseHandler(source, double);
+  public handle(source: Proxifiable): ProxyHandler<Proxifiable> {
+    const baseHandler = this._createBaseHandler(source);
 
     const requiredHandlerMethods = Object.keys(baseHandler);
 
@@ -221,18 +226,22 @@ export default class Mock {
     }, baseHandler);
   }
 
-  private _createBaseHandler(
-    source: Proxifiable,
-    double: Proxifiable
-  ): ProxyHandler<Proxifiable> {
+  private _createBaseHandler(source: Proxifiable): ProxyHandler<Proxifiable> {
     return {
-      get: (target, propKey, receiver) => {
+      get: (double, propKey, receiver) => {
         // only report as moxied when get on the porxy itself but its descendants
-        if (target === double) {
-          if (propKey === IS_MOXY) return true;
-          if (propKey === this.options.mockAccessKey) {
-            return this;
-          }
+        if (
+          propKey === IS_MOXY &&
+          this._proxifiedOfDoubles.get(double) === receiver
+        ) {
+          return true;
+        }
+
+        if (
+          propKey === this.options.mockAccessKey &&
+          this._proxifiedOfDoubles.get(double) === receiver
+        ) {
+          return this;
         }
 
         const getterMock = this.getter(propKey);
@@ -245,7 +254,7 @@ export default class Mock {
           let property = implementation
             ? Reflect.apply(implementation, receiver, [])
             : Reflect.get(
-                !shouldGetFromSource && propKey in target ? target : source,
+                !shouldGetFromSource && propKey in double ? double : source,
                 propKey,
                 receiver
               );
@@ -255,7 +264,7 @@ export default class Mock {
             !shouldGetFromSource &&
             isProxifiable(property)
           ) {
-            property = this._getProxified(this._proxifiedProps, property);
+            property = this._getProxified(this._proxifiedOfProps, property);
           }
 
           return (call.result = property);
@@ -269,7 +278,7 @@ export default class Mock {
         }
       },
 
-      set: (target, propKey, value, receiver) => {
+      set: (double, propKey, value, receiver) => {
         if (propKey === this.options.mockAccessKey) {
           return false;
         }
@@ -287,7 +296,7 @@ export default class Mock {
 
           return checkPropIsSetter(source, propKey)
             ? Reflect.set(source, propKey, value, receiver)
-            : Reflect.set(target, propKey, value);
+            : Reflect.set(double, propKey, value);
         } catch (err) {
           call.isThrow = true;
           call.result = err;
@@ -298,7 +307,7 @@ export default class Mock {
         }
       },
 
-      construct: (target, args, newTarget) => {
+      construct: (double, args, newTarget) => {
         const implementation = this._getImplementation(source as Function);
 
         const call = new Call({ args, isConstructor: true });
@@ -307,7 +316,7 @@ export default class Mock {
           let instance = Reflect.construct(implementation, args, newTarget);
 
           if (this.options.mockNewInstance) {
-            instance = this._getProxified(this._proxifiedValues, instance);
+            instance = this._getProxified(this._proxifiedOfValues, instance);
           }
 
           return (call.instance = instance);
@@ -321,7 +330,7 @@ export default class Mock {
         }
       },
 
-      apply: (target, thisArg, args) => {
+      apply: (double, thisArg, args) => {
         const implementation = this._getImplementation(source as Function);
 
         const call = new Call({ args, instance: thisArg });
@@ -331,11 +340,11 @@ export default class Mock {
 
           if (this.options.mockReturnValue) {
             result = isProxifiable(result)
-              ? this._getProxified(this._proxifiedValues, result)
+              ? this._getProxified(this._proxifiedOfValues, result)
               : result instanceof Promise
               ? result.then(r =>
                   isProxifiable(r)
-                    ? this._getProxified(this._proxifiedValues, r)
+                    ? this._getProxified(this._proxifiedOfValues, r)
                     : r
                 )
               : result;
@@ -352,8 +361,8 @@ export default class Mock {
         }
       },
 
-      getOwnPropertyDescriptor: (target, prop) => {
-        const targetDesc = Reflect.getOwnPropertyDescriptor(target, prop);
+      getOwnPropertyDescriptor: (double, prop) => {
+        const targetDesc = Reflect.getOwnPropertyDescriptor(double, prop);
         if (targetDesc) return targetDesc;
 
         const sourceDesc = Reflect.getOwnPropertyDescriptor(source, prop);
@@ -365,16 +374,19 @@ export default class Mock {
         );
       },
 
-      getPrototypeOf: target =>
-        (typeof source === 'object' && Reflect.getPrototypeOf(target)) ||
-        Reflect.getPrototypeOf(source),
+      getPrototypeOf: double =>
+        typeof source === 'object'
+          ? // object double has prototype default to null, if not set by user
+            // return prototype of source
+            Reflect.getPrototypeOf(double) || Reflect.getPrototypeOf(source)
+          : Reflect.getPrototypeOf(source),
 
-      has: (target, prop) =>
-        Reflect.has(target, prop) || Reflect.has(source, prop),
+      has: (double, prop) =>
+        Reflect.has(double, prop) || Reflect.has(source, prop),
 
-      ownKeys: target => [
+      ownKeys: double => [
         ...new Set(
-          Reflect.ownKeys(target).concat(Reflect.ownKeys(source))
+          Reflect.ownKeys(double).concat(Reflect.ownKeys(source))
         ).values(),
       ],
     };
@@ -382,19 +394,19 @@ export default class Mock {
 
   private _getProxified(
     cache: ProxifiedCache,
-    target: Proxifiable
+    source: Proxifiable
   ): Proxifiable {
-    if (isMoxy(target)) return target;
+    if (isMoxy(source)) return source;
 
-    const cached = cache.get(target);
+    const cached = cache.get(source);
     if (cached !== undefined) {
       return cached;
     }
 
     const childMock = new Mock(this.options);
 
-    const proxified = childMock.proxify(target);
-    cache.set(target, proxified);
+    const proxified = childMock.proxify(source);
+    cache.set(source, proxified);
 
     return proxified;
   }

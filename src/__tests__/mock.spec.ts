@@ -557,7 +557,7 @@ describe('#reset()', () => {
 describe('#handle()', () => {
   it('returns a proxy handler', () => {
     const mock = new Mock();
-    const handler = mock.handle({}, {});
+    const handler = mock.handle({});
 
     expect(typeof handler).toBe('object');
     expect('set' in handler).toBe(true);
@@ -573,7 +573,7 @@ describe('#handle()', () => {
     const mock = new Mock({ middlewares });
 
     const source = {};
-    const handler = mock.handle(source, {});
+    const handler = mock.handle(source);
 
     expect(middlewares[0].mock.calls.length).toBe(1);
     expect(middlewares[1].mock.calls.length).toBe(1);
@@ -600,7 +600,7 @@ describe('#handle()', () => {
   });
 
   it('throw if original method lost in middleware result', () => {
-    const methodsShoudContain = Object.keys(new Mock().handle({}, {}));
+    const methodsShoudContain = Object.keys(new Mock().handle({}));
 
     methodsShoudContain.forEach(method => {
       const middleware = (handler: ProxyHandler<any>) => {
@@ -611,7 +611,7 @@ describe('#handle()', () => {
       };
 
       const mock = new Mock({ middlewares: [middleware] });
-      expect(() => mock.handle({}, {})).toThrow();
+      expect(() => mock.handle({})).toThrow();
     });
   });
 
@@ -1431,7 +1431,7 @@ describe('#handle()', () => {
   });
 
   describe('other handler method', () => {
-    it.only('work as usual', () => {
+    it('work as usual', () => {
       class Foo {}
       const mock = new Mock();
       const moxied: any = mock.proxify(new Foo());
