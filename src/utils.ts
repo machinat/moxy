@@ -35,8 +35,14 @@ export const concatOptions = (
   ...base,
   ...next,
   middlewares: concatIfBothExists(base.middlewares, next.middlewares),
-  includeProps: concatIfBothExists(base.includeProps, next.includeProps),
-  excludeProps: concatIfBothExists(base.excludeProps, next.excludeProps),
+  includeProperties: concatIfBothExists(
+    base.includeProperties,
+    next.includeProperties
+  ),
+  excludeProperties: concatIfBothExists(
+    base.excludeProperties,
+    next.excludeProperties
+  ),
 });
 
 export const formatUnproxifiable = (s: any): string =>

@@ -47,15 +47,15 @@ export default class Mock {
 
   public constructor(options: MockOptionsInput = {}) {
     const defaultOptions = {
-      mockAccessKey: 'mock',
-      mockReturnValue: false,
+      accessKey: 'mock',
+      mockReturn: false,
       mockNewInstance: true,
-      mockProperty: true,
+      mockMethod: true,
       recordGetter: false,
       recordSetter: true,
       middlewares: null,
-      includeProps: null,
-      excludeProps: null,
+      includeProperties: null,
+      excludeProperties: null,
     };
 
     this.options = {
@@ -63,22 +63,22 @@ export default class Mock {
       ...options,
     };
 
-    const { includeProps, excludeProps } = this.options;
+    const { includeProperties, excludeProperties } = this.options;
 
-    this._propWhitelistSymbols = includeProps
-      ? includeProps.filter((p): p is symbol => typeof p === 'symbol')
+    this._propWhitelistSymbols = includeProperties
+      ? includeProperties.filter((p): p is symbol => typeof p === 'symbol')
       : [];
 
-    this._propWhitelistPatterns = includeProps
-      ? includeProps.filter((p): p is string => typeof p === 'string')
+    this._propWhitelistPatterns = includeProperties
+      ? includeProperties.filter((p): p is string => typeof p === 'string')
       : [];
 
-    this._propBlacklistSymbols = excludeProps
-      ? excludeProps.filter((p): p is symbol => typeof p === 'symbol')
+    this._propBlacklistSymbols = excludeProperties
+      ? excludeProperties.filter((p): p is symbol => typeof p === 'symbol')
       : [];
 
-    this._propBlacklistPatterns = excludeProps
-      ? excludeProps.filter((p): p is string => typeof p === 'string')
+    this._propBlacklistPatterns = excludeProperties
+      ? excludeProperties.filter((p): p is string => typeof p === 'string')
       : [];
 
     this._proxifiedOfDoubles = new Map();
@@ -131,7 +131,7 @@ export default class Mock {
     // clear also mock of proxified props
     for (const proxiedProp of this._proxifiedOfProps.values()) {
       // @ts-ignore it's Proxy magic
-      proxiedProp[this.options.mockAccessKey].clear();
+      proxiedProp[this.options.accessKey].clear();
     }
 
     clearPropMockMapping(this.getterMocks);
@@ -238,7 +238,7 @@ export default class Mock {
         }
 
         if (
-          propKey === this.options.mockAccessKey &&
+          propKey === this.options.accessKey &&
           this._proxifiedOfDoubles.get(double) === receiver
         ) {
           return this;
@@ -260,7 +260,7 @@ export default class Mock {
               );
 
           if (
-            this._shouldProxifyProp(propKey) &&
+            this._shouldProxifyProp(propKey, property) &&
             !shouldGetFromSource &&
             isProxifiable(property)
           ) {
@@ -279,7 +279,7 @@ export default class Mock {
       },
 
       set: (double, propKey, value, receiver) => {
-        if (propKey === this.options.mockAccessKey) {
+        if (propKey === this.options.accessKey) {
           return false;
         }
 
@@ -338,7 +338,7 @@ export default class Mock {
         try {
           let result = Reflect.apply(implementation, thisArg, args);
 
-          if (this.options.mockReturnValue) {
+          if (this.options.mockReturn) {
             result = isProxifiable(result)
               ? this._getProxified(this._proxifiedOfValues, result)
               : result instanceof Promise
@@ -423,21 +423,23 @@ export default class Mock {
     });
   }
 
-  private _shouldProxifyProp(key: number | string | symbol): boolean {
+  private _shouldProxifyProp(
+    key: number | string | symbol,
+    value: any
+  ): boolean {
     if (typeof key === 'number') return false;
 
     const { options } = this;
     if (
-      !options.mockProperty ||
-      (typeof key === 'string'
+      typeof key === 'string'
         ? matchPatterns(key, this._propBlacklistPatterns)
-        : this._propBlacklistSymbols.includes(key))
+        : this._propBlacklistSymbols.includes(key)
     ) {
       return false;
     }
 
     return (
-      !options.includeProps ||
+      (typeof value === 'function' && options.mockMethod) ||
       (typeof key === 'string'
         ? matchPatterns(key, this._propWhitelistPatterns)
         : this._propWhitelistSymbols.includes(key))

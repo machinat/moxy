@@ -28,13 +28,13 @@ it('is a constructor', () => {
 describe('#constructor(options)', () => {
   it('init with expected default value', () => {
     expect(new Mock().options).toEqual({
-      mockAccessKey: 'mock',
+      accessKey: 'mock',
       middlewares: null,
-      mockReturnValue: false,
+      mockReturn: false,
       mockNewInstance: true,
-      mockProperty: true,
-      includeProps: null,
-      excludeProps: null,
+      mockMethod: true,
+      includeProperties: null,
+      excludeProperties: null,
       recordGetter: false,
       recordSetter: true,
     });
@@ -42,13 +42,13 @@ describe('#constructor(options)', () => {
 
   it('init with all options replaceable', () => {
     const fullOptions = {
-      mockAccessKey: 'MOCK',
+      accessKey: 'MOCK',
       middlewares: [(handler: ProxyHandler<any>) => handler],
-      mockReturnValue: false,
+      mockReturn: false,
       mockNewInstance: false,
-      mockProperty: false,
-      includeProps: ['foo'],
-      excludeProps: ['bar'],
+      mockMethod: false,
+      includeProperties: ['foo'],
+      excludeProperties: ['bar'],
       recordGetter: true,
       recordSetter: true,
     };
@@ -59,19 +59,19 @@ describe('#constructor(options)', () => {
   it('init with options partially replaced', () => {
     expect(
       new Mock({
-        mockAccessKey: 'moooock',
-        mockReturnValue: false,
-        includeProps: ['foo', 'bar'],
+        accessKey: 'moooock',
+        mockReturn: false,
+        includeProperties: ['foo', 'bar'],
         recordGetter: true,
       }).options
     ).toEqual({
-      mockAccessKey: 'moooock',
+      accessKey: 'moooock',
       middlewares: null,
-      mockReturnValue: false,
+      mockReturn: false,
       mockNewInstance: true,
-      mockProperty: true,
-      includeProps: ['foo', 'bar'],
-      excludeProps: null,
+      mockMethod: true,
+      includeProperties: ['foo', 'bar'],
+      excludeProperties: null,
       recordGetter: true,
       recordSetter: true,
     });
@@ -96,14 +96,15 @@ describe('#proxify(source, mock)', () => {
   it('returns new Proxy(target, mock.handle()) with transfromed empty target', () => {
     const handler = { apply() {} };
     const mockInstance = moxy(new Mock(), {
-      mockReturnValue: false,
-      includeProps: ['handle'],
+      mockReturn: false,
+      mockMethod: false,
+      includeProperties: ['handle'],
     });
     mockInstance.handle.mock.fakeReturnValue(handler);
 
     global.Proxy = moxy(class {}, {
       mockNewInstance: false,
-      mockProperty: false,
+      mockMethod: false,
     });
 
     const fn = () => {};
@@ -389,7 +390,7 @@ describe('#clear()', () => {
 
   it('empty proxified values cached', () => {
     const result = { foo: 'bar' };
-    const mock = new Mock({ mockReturnValue: true });
+    const mock = new Mock({ mockReturn: true });
     const fn: any = mock.proxify(() => result);
 
     const r1 = fn();
@@ -486,7 +487,7 @@ describe('#reset()', () => {
   });
 
   it('cleans cache of proxified values', () => {
-    const mock = new Mock({ mockReturnValue: true });
+    const mock = new Mock({ mockReturn: true });
     const fixed = {};
     const fn: any = mock.proxify(() => fixed);
 
@@ -616,7 +617,7 @@ describe('#handle()', () => {
   });
 
   describe('handler.get()', () => {
-    it('returns the mock of itself while getting options.mockAccessKey', () => {
+    it('returns the mock of itself while getting options.accessKey', () => {
       const mock1 = new Mock();
       const moxied1: any = mock1.proxify({});
 
@@ -624,7 +625,7 @@ describe('#handle()', () => {
       expect(moxied1.mock).toBe(mock1);
       expect('mock' in moxied1).toBe(false);
 
-      const mock2 = new Mock({ mockAccessKey: 'myMock' });
+      const mock2 = new Mock({ accessKey: 'myMock' });
       const moxied2: any = mock2.proxify({});
 
       expect(isMoxy(moxied2)).toBe(true);
@@ -633,7 +634,7 @@ describe('#handle()', () => {
       expect('myMock' in moxied1).toBe(false);
 
       const MOCK = Symbol('mock');
-      const mock3 = new Mock({ mockAccessKey: MOCK });
+      const mock3 = new Mock({ accessKey: MOCK });
       const moxied3: any = mock3.proxify({});
 
       expect(isMoxy(moxied3)).toBe(true);
@@ -729,49 +730,67 @@ describe('#handle()', () => {
       ]);
     });
 
-    it('proxify object or function prop if mockProperty set to true', () => {
-      const mock = new Mock({ mockProperty: true });
+    it('proxify only function prop if mockMethod set to true', () => {
+      const BAR = Symbol('BAR');
+      const BAZ = Symbol('BAZ');
+
+      const mock = new Mock({ mockMethod: true });
       const target = {
-        foo: { bar: 'baz' },
+        foo: {},
         hello() {
           return 'world';
+        },
+        [BAR]: {},
+        [BAZ]() {
+          return 'BAZ';
         },
       };
       const moxied: any = mock.proxify(target);
 
-      expect(moxied.foo).not.toBe(target.foo);
-      expect(moxied.foo).toEqual({ bar: 'baz' });
-
-      expect(moxied.foo.mock).toBeInstanceOf(Mock);
-      expect(moxied.foo.mock).not.toBe(mock);
-      expect(moxied.foo.mock.options).toEqual(mock.options);
-
-      moxied.foo.mock.getter('bar').fakeReturnValue('zebra');
-      expect(moxied.foo.bar).toBe('zebra');
+      expect(moxied.foo).toBe(target.foo);
+      expect(moxied.foo.mock).toBe(undefined);
 
       expect(moxied.hello).not.toBe(target.hello);
       expect(typeof moxied.hello).toBe('function');
       expect(moxied.hello()).toBe('world');
 
       expect(moxied.hello.mock).toBeInstanceOf(Mock);
-      expect(moxied.hello.mock).toBeInstanceOf(Mock);
       expect(moxied.hello.mock).not.toBe(mock);
-      expect(moxied.hello.mock).not.toBe(moxied.foo.mock);
       expect(moxied.hello.mock.options).toEqual(mock.options);
 
-      moxied.hello.mock.fakeReturnValue('fulk');
-      expect(moxied.hello()).toBe('fulk');
+      moxied.hello.mock.fakeReturnValue('folks');
+      expect(moxied.hello()).toBe('folks');
+
+      expect(moxied[BAR]).toBe(target[BAR]);
+      expect(moxied[BAR].mock).toBe(undefined);
+
+      expect(moxied[BAZ]).not.toBe(target[BAZ]);
+      expect(moxied[BAZ].mock).toBeInstanceOf(Mock);
+      expect(moxied[BAZ]()).toBe('BAZ');
+      expect(moxied[BAZ].mock).not.toBe(moxied.hello.mock);
+      expect(moxied[BAZ].mock.options).toEqual(mock.options);
     });
 
-    it('proxify only props in includeProps if defined', () => {
+    it('proxify only properties in includeProperties if defined', () => {
       const BEAR = Symbol('BEAR');
       const BEER = Symbol('BEER');
       const mock = new Mock({
-        mockProperty: true,
-        includeProps: ['ba*', BEER],
+        mockMethod: false,
+        includeProperties: ['ba*', BEER],
       });
 
-      const target = { foo: {}, bar: {}, baz: {}, [BEAR]: {}, [BEER]: {} };
+      const target = {
+        foo: {},
+        bar: {},
+        baz() {
+          return 'BAZ';
+        },
+        [BEAR]: {},
+        [BEER]: {},
+        hello() {
+          return 'WORLD';
+        },
+      };
       const moxied: any = mock.proxify(target);
 
       expect(moxied.foo).toBe(target.foo);
@@ -782,24 +801,42 @@ describe('#handle()', () => {
 
       expect(moxied.baz).not.toBe(target.baz);
       expect(moxied.baz.mock).toBeInstanceOf(Mock);
+      expect(moxied.baz()).toBe('BAZ');
 
       expect(moxied[BEAR]).toBe(target[BEAR]);
       expect(moxied[BEAR].mock).toBe(undefined);
 
       expect(moxied[BEER]).not.toBe(target[BEER]);
       expect(moxied[BEER].mock).toBeInstanceOf(Mock);
+
+      expect(moxied.hello).toBe(target.hello);
+      expect(moxied.hello.mock).toBe(undefined);
+      expect(moxied.hello()).toBe('WORLD');
     });
 
-    it('proxify excluding props in excludeProps if defined', () => {
+    it('proxify excluding props in excludeProperties if defined', () => {
       const BEAR = Symbol('BEAR');
       const BEER = Symbol('BEER');
+      const HELLO = Symbol('HELLO');
 
       const mock = new Mock({
-        mockProperty: true,
-        excludeProps: ['b*', BEER],
+        mockMethod: true,
+        includeProperties: ['*', BEER, BEAR],
+        excludeProperties: ['b*', BEER],
       });
 
-      const target = { foo: {}, bar: {}, baz: {}, [BEAR]: {}, [BEER]: {} };
+      const target = {
+        foo: {},
+        bar: {},
+        baz() {
+          return 'BAZ';
+        },
+        [BEAR]: {},
+        [BEER]: {},
+        [HELLO]() {
+          return 'WORLD';
+        },
+      };
       const moxied: any = mock.proxify(target);
 
       expect(moxied.foo).not.toBe(target.foo);
@@ -810,20 +847,25 @@ describe('#handle()', () => {
 
       expect(moxied.baz).toBe(target.baz);
       expect(moxied.baz.mock).toBe(undefined);
+      expect(moxied.baz()).toBe('BAZ');
 
       expect(moxied[BEAR]).not.toBe(target[BEAR]);
       expect(moxied[BEAR].mock).toBeInstanceOf(Mock);
 
       expect(moxied[BEER]).toBe(target[BEER]);
       expect(moxied[BEER].mock).toBe(undefined);
+
+      expect(moxied[HELLO]).not.toBe(target[HELLO]);
+      expect(moxied[HELLO].mock).toBeInstanceOf(Mock);
+      expect(moxied[HELLO]()).toBe('WORLD');
     });
 
-    test('excludeProps should take presedence of includeProps', () => {
+    test('excludeProperties should take presedence of includeProperties', () => {
       const BEER = Symbol('BEER');
       const mock = new Mock({
-        mockProperty: true,
-        includeProps: ['foo', 'bar', BEER],
-        excludeProps: ['bar', 'baz', BEER],
+        mockMethod: true,
+        includeProperties: ['foo', 'bar', BEER],
+        excludeProperties: ['bar', 'baz', BEER],
       });
 
       const target = { foo: {}, bar: {}, baz: {}, [BEER]: {} };
@@ -842,8 +884,8 @@ describe('#handle()', () => {
       expect(moxied[BEER].mock).toBe(undefined);
     });
 
-    it('returns orginal prop if mockProperty set to false', () => {
-      const mock = new Mock({ mockProperty: false });
+    it('returns orginal prop if mockMethod set to false', () => {
+      const mock = new Mock({ mockMethod: false });
       const target = {
         foo: { bar: 'baz' },
         hello() {
@@ -886,14 +928,14 @@ describe('#handle()', () => {
       class Fn {
         public static someStaticMethod() {}
       }
-      const fnMock = new Mock();
+      const fnMock = new Mock({ includeProperties: ['prototype'] });
       const MoxiedFn: any = fnMock.proxify(Fn);
 
       expect(MoxiedFn.mock).toBe(fnMock);
       expect(MoxiedFn.prototype.mock).toBe(undefined);
       expect(MoxiedFn.someStaticMethod.mock).toBeInstanceOf(Mock);
 
-      const objMock = new Mock();
+      const objMock = new Mock({ includeProperties: ['prototype'] });
       const moxiedObj: any = objMock.proxify({ prototype: {} });
 
       expect(moxiedObj.mock).toBe(objMock);
@@ -1249,9 +1291,9 @@ describe('#handle()', () => {
       ]);
     });
 
-    it('proxify object returned with a new Mock if mockReturnValue set to true', () => {
+    it('proxify object returned with a new Mock if mockReturn set to true', () => {
       const result = { foo: 'bar' };
-      const mock = new Mock({ mockReturnValue: true });
+      const mock = new Mock({ mockReturn: true });
       const fn: any = mock.proxify(() => result);
 
       const r1 = fn();
@@ -1275,8 +1317,8 @@ describe('#handle()', () => {
       expect(r2.mock).not.toBe(r1.mock);
     });
 
-    it('proxify function returned with a new Mock if mockReturnValue set to true', () => {
-      const mock = new Mock({ mockReturnValue: true });
+    it('proxify function returned with a new Mock if mockReturn set to true', () => {
+      const mock = new Mock({ mockReturn: true });
       const moxied: any = mock.proxify((a: number) => (b: number) => a + b);
 
       const fn1 = moxied(1);
@@ -1300,7 +1342,7 @@ describe('#handle()', () => {
       const result = { hello: 'world' };
       const promise = Promise.resolve(result);
 
-      const mock = new Mock({ mockReturnValue: true });
+      const mock = new Mock({ mockReturn: true });
       const moxied: any = mock.proxify(() => promise);
 
       expect(moxied()).toBeInstanceOf(Promise);
@@ -1336,9 +1378,9 @@ describe('#handle()', () => {
       expect(moxied.mock.calls[0].result).toBe(returnedValue);
     });
 
-    it('keep original return value if mockReturnValue set to false', () => {
+    it('keep original return value if mockReturn set to false', () => {
       const retrunedObj = {};
-      const mock = new Mock({ mockReturnValue: false });
+      const mock = new Mock({ mockReturn: false });
       const moxied: any = mock.proxify(() => retrunedObj);
 
       expect(moxied()).toBe(retrunedObj);

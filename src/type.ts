@@ -19,13 +19,13 @@ export type ProxyMiddleware = (
 ) => ProxyHandler<Proxifiable>;
 
 export interface MockOptions {
-  mockAccessKey: string | symbol;
+  accessKey: string | symbol;
   middlewares: null | ProxyMiddleware[];
-  mockReturnValue: boolean;
+  mockReturn: boolean;
   mockNewInstance: boolean;
-  mockProperty: boolean;
-  includeProps: null | (string | symbol)[];
-  excludeProps: null | (string | symbol)[];
+  mockMethod: boolean;
+  includeProperties: null | (string | symbol)[];
+  excludeProperties: null | (string | symbol)[];
   recordGetter: boolean;
   recordSetter: boolean;
 }

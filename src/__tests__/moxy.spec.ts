@@ -72,7 +72,7 @@ describe('empty mock', () => {
   });
 });
 
-xtest('empty mock as an object', () => {
+test('empty mock as an object', () => {
   const greeting = (agent: { introduce(): string }) =>
     `Hello, ${agent.introduce()}`;
 
@@ -80,7 +80,7 @@ xtest('empty mock as an object', () => {
     return `I'm ${this.code}.`;
   }
 
-  const spy = moxy();
+  const spy = moxy({}, { recordGetter: true });
   spy.code = 'James Bond';
   spy.introduce = introduce;
 
