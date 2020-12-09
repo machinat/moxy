@@ -1,4 +1,4 @@
-import { PropMockMapping, Proxifiable, MockOptionsInput } from './type';
+import { PropMockMapping, Proxifiable, MockOptionsInput } from './types';
 
 export const createProxyTargetDouble = (source: Proxifiable): Proxifiable =>
   typeof source === 'function' ? function moxyDouble() {} : Object.create(null);

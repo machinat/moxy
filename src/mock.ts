@@ -19,7 +19,7 @@ import {
   FunctionImpl,
   WrapImplFunctor,
   Moxy,
-} from './type';
+} from './types';
 
 const IS_MOXY = Symbol('is_moxy');
 

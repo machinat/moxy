@@ -1,9 +1,10 @@
 import moxyFactory from './factory';
-import { MockOptionsInput } from './type';
+import { MockOptionsInput } from './types';
 
 export { default as factory } from './factory';
 export { default as Mock, isMoxy } from './mock';
 export { default as Call } from './call';
+export { Moxy } from './types';
 
 const defaultOptions = {};
 

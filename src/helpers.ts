@@ -1,6 +1,6 @@
 import deepEqual from 'fast-deep-equal';
 import Mock from './mock';
-import { FunctionImpl } from './type';
+import { FunctionImpl } from './types';
 
 export const equal = (...expectedArgs: any[]) => (...actualArgs: any[]) =>
   deepEqual(expectedArgs, actualArgs);

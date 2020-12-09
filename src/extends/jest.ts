@@ -1,5 +1,5 @@
 import Mock from '../mock';
-import { ProxyMiddleware } from '../type';
+import { ProxyMiddleware } from '../types';
 
 const JestFnDescriptor = {
   _isMockFunction: {
