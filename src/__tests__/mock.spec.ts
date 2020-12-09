@@ -180,7 +180,7 @@ describe(`Faking methods
 
   it('invoke original target if not faked', () => {
     const mock = new Mock();
-    const moxied: any = mock.proxify(() => 0);
+    const moxied = mock.proxify(() => 0);
 
     expect(moxied()).toBe(0);
   });

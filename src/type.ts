@@ -6,6 +6,10 @@ export type FunctionImpl = (...args: any[]) => unknown;
 
 export type WrapImplFunctor = (original: FunctionImpl) => FunctionImpl;
 
+export type Moxy<T> = T & { mock: Mock } & {
+    [K in keyof T]: T[K] extends FunctionImpl ? T[K] & { mock: Mock } : unknown
+  };
+
 // eslint-disable-next-line typescript/no-use-before-define
 export interface PropMockMapping {
   [k: string /* | number | symbol */]: Mock;

@@ -18,6 +18,7 @@ import {
   ProxifiedCache,
   FunctionImpl,
   WrapImplFunctor,
+  Moxy,
 } from './type';
 
 const IS_MOXY = Symbol('is_moxy');
@@ -94,7 +95,7 @@ export default class Mock {
     return [...this._calls];
   }
 
-  public proxify<T extends Proxifiable>(source: T): T & { mock: Mock } {
+  public proxify<T extends Proxifiable>(source: T): Moxy<T> {
     if (!isProxifiable(source)) {
       throw new TypeError(
         `Cannot create a proxy with ${formatUnproxifiable(source)}`

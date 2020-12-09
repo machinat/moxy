@@ -1,6 +1,6 @@
 import Mock from './mock';
 import { concatOptions } from './utils';
-import { MockOptionsInput, Proxifiable } from './type';
+import { MockOptionsInput, Proxifiable, Moxy } from './type';
 
 function empty(): void {}
 
@@ -9,7 +9,7 @@ const moxyFactory = (defaultOptions: MockOptionsInput = {}) => <
 >(
   target?: T,
   options: MockOptionsInput = {}
-): T & { mock: Mock } => {
+): Moxy<T> => {
   const mock = new Mock(concatOptions(defaultOptions, options));
 
   if (target === undefined) {
