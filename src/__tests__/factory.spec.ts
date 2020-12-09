@@ -34,7 +34,7 @@ it('use default options provided to create Mock', () => {
 
   const moxied = factory(options)({});
 
-  expect(moxied.myMock.options).toEqual(options);
+  expect((moxied as any).myMock.options).toEqual(options);
 });
 
 it('use create time options provided to create Mock', () => {
@@ -52,7 +52,7 @@ it('use create time options provided to create Mock', () => {
 
   const moxied = factory()({}, options);
 
-  expect(moxied.myMock.options).toEqual(options);
+  expect((moxied as any).myMock.options).toEqual(options);
 });
 
 it('extends the default options with create time options', () => {
@@ -75,7 +75,7 @@ it('extends the default options with create time options', () => {
 
   const moxied = factory(defaultOptions)({}, createTimeOptions);
 
-  expect(moxied.myOwnMock.options).toEqual({
+  expect((moxied as any).myOwnMock.options).toEqual({
     accessKey: 'myOwnMock',
     middlewares: defaultOptions.middlewares,
     mockReturn: false,

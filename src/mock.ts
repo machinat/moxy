@@ -5,7 +5,7 @@ import {
   createProxyTargetDouble,
   clearPropMockMapping,
   isProxifiable,
-  isFunctionProp,
+  isFunctionProtoProp,
   formatUnproxifiable,
   checkPropIsSetter,
 } from './utils';
@@ -16,6 +16,8 @@ import {
   PropMockMapping,
   MockOptionsInput,
   ProxifiedCache,
+  FunctionImpl,
+  WrapImplFunctor,
 } from './type';
 
 const IS_MOXY = Symbol('is_moxy');
@@ -37,8 +39,8 @@ export default class Mock {
   public getterMocks!: PropMockMapping;
   public setterMocks!: PropMockMapping;
 
-  private _defaultWrapper: undefined | Function;
-  private _wrapQueue!: Function[];
+  private _mainWrapper: undefined | WrapImplFunctor;
+  private _oneOffWrapperQueue!: WrapImplFunctor[];
 
   private _propWhitelistSymbols: symbol[];
   private _propWhitelistPatterns: string[];
@@ -92,14 +94,14 @@ export default class Mock {
     return [...this._calls];
   }
 
-  public proxify(source: Proxifiable): Proxifiable {
+  public proxify<T extends Proxifiable>(source: T): T & { mock: Mock } {
     if (!isProxifiable(source)) {
       throw new TypeError(
         `Cannot create a proxy with ${formatUnproxifiable(source)}`
       );
     }
 
-    const double = createProxyTargetDouble(source);
+    const double: any = createProxyTargetDouble(source);
     const proxified = new Proxy(double, this.handle(source));
 
     this._proxifiedOfDoubles.set(double, proxified);
@@ -148,43 +150,46 @@ export default class Mock {
     this.getterMocks = {};
     this.setterMocks = {};
 
-    this._wrapQueue = [];
-    this._defaultWrapper = undefined;
+    this._oneOffWrapperQueue = [];
+    this._mainWrapper = undefined;
 
     return this;
   }
 
-  public wrap(wrapper: (fn: Function) => Function): this {
-    this._defaultWrapper = wrapper;
+  public wrap(wrapper: WrapImplFunctor): this {
+    this._mainWrapper = wrapper;
     return this;
   }
 
-  public wrapOnce(wrapper: Function): this {
-    this._wrapQueue.push(wrapper);
+  public wrapOnce(wrapper: WrapImplFunctor): this {
+    this._oneOffWrapperQueue.push(wrapper);
     return this;
   }
 
-  public fake(implementation: Function): this {
+  public fake(implementation: FunctionImpl): this {
     this.wrap(() => implementation);
     return this;
   }
 
-  public fakeWhenArgs(matcher: Function, implementation: Function): this {
-    const lastFunctor = this._defaultWrapper;
+  public fakeWhenArgs(
+    matcher: (...args: any[]) => boolean,
+    implementation: FunctionImpl
+  ): this {
+    const lastWrapper = this._mainWrapper;
 
-    const withArgsFunctor = (source: Function) => (...args: any[]): any => {
+    const whenArgsFunctor = (source: FunctionImpl) => (...args: any[]): any => {
       if (matcher(...args)) {
         return implementation(...args);
       }
 
-      return lastFunctor ? lastFunctor(source)(...args) : source(...args);
+      return lastWrapper ? lastWrapper(source)(...args) : source(...args);
     };
 
-    this.wrap(withArgsFunctor);
+    this.wrap(whenArgsFunctor);
     return this;
   }
 
-  public fakeOnce(implementation: Function): this {
+  public fakeOnce(implementation: FunctionImpl): this {
     this.wrapOnce(() => implementation);
     return this;
   }
@@ -244,20 +249,22 @@ export default class Mock {
           return this;
         }
 
-        const getterMock = this.getter(propKey);
-        const implementation = getterMock._getImplementation();
+        const shouldGetFromSource = isFunctionProtoProp(source, propKey);
 
+        const defaultImpl = () => {
+          return Reflect.get(
+            !shouldGetFromSource && propKey in double ? double : source,
+            propKey,
+            receiver
+          );
+        };
+
+        const getterMock = this.getter(propKey);
+        const getterImpl = getterMock._getFunctionImpl(defaultImpl);
         const call = new Call({ instance: receiver });
 
-        const shouldGetFromSource = isFunctionProp(source, propKey);
         try {
-          let property = implementation
-            ? Reflect.apply(implementation, receiver, [])
-            : Reflect.get(
-                !shouldGetFromSource && propKey in double ? double : source,
-                propKey,
-                receiver
-              );
+          let property = Reflect.apply(getterImpl, receiver, []);
 
           if (
             this._shouldProxifyProp(propKey, property) &&
@@ -274,7 +281,9 @@ export default class Mock {
 
           throw err;
         } finally {
-          if (this.options.recordGetter) getterMock._calls.push(call);
+          if (this.options.recordGetter) {
+            getterMock._calls.push(call);
+          }
         }
       },
 
@@ -283,32 +292,35 @@ export default class Mock {
           return false;
         }
 
-        const setterMock = this.setter(propKey);
-        const implementation = setterMock._getImplementation();
+        let success = true;
 
+        const defaultImpl = (wrapedValue: any) => {
+          success = checkPropIsSetter(source, propKey)
+            ? Reflect.set(source, propKey, wrapedValue, receiver)
+            : Reflect.set(double, propKey, wrapedValue);
+        };
+
+        const setterMock = this.setter(propKey);
+        const setterImpl = setterMock._getFunctionImpl(defaultImpl);
         const call = new Call({ args: [value], instance: receiver });
 
         try {
-          if (implementation !== undefined) {
-            call.result = Reflect.apply(implementation, receiver, [value]);
-            return true;
-          }
-
-          return checkPropIsSetter(source, propKey)
-            ? Reflect.set(source, propKey, value, receiver)
-            : Reflect.set(double, propKey, value);
+          call.result = Reflect.apply(setterImpl, receiver, [value]);
+          return success;
         } catch (err) {
           call.isThrow = true;
           call.result = err;
 
           throw err;
         } finally {
-          if (this.options.recordSetter) setterMock._calls.push(call);
+          if (this.options.recordSetter) {
+            setterMock._calls.push(call);
+          }
         }
       },
 
       construct: (double, args, newTarget) => {
-        const implementation = this._getImplementation(source as Function);
+        const implementation = this._getFunctionImpl(source as FunctionImpl);
 
         const call = new Call({ args, isConstructor: true });
 
@@ -331,7 +343,7 @@ export default class Mock {
       },
 
       apply: (double, thisArg, args) => {
-        const implementation = this._getImplementation(source as Function);
+        const implementation = this._getFunctionImpl(source as FunctionImpl);
 
         const call = new Call({ args, instance: thisArg });
 
@@ -446,18 +458,14 @@ export default class Mock {
     );
   }
 
-  private _getImplementation(): undefined | Function;
-  private _getImplementation(source: Function): Function;
-  private _getImplementation(source?: Function): undefined | Function {
-    if (this._wrapQueue.length > 0) {
-      // @ts-ignore length checked
-      return this._wrapQueue.shift()(source);
+  private _getFunctionImpl(source: FunctionImpl): FunctionImpl {
+    if (this._oneOffWrapperQueue.length > 0) {
+      return (this._oneOffWrapperQueue.shift() as WrapImplFunctor)(source);
     }
 
-    if (this._defaultWrapper !== undefined) {
-      return this._defaultWrapper(source);
+    if (this._mainWrapper !== undefined) {
+      return this._mainWrapper(source);
     }
-
     return source;
   }
 }

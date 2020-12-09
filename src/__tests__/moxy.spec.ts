@@ -80,7 +80,7 @@ test('empty mock as an object', () => {
     return `I'm ${this.code}.`;
   }
 
-  const spy = moxy({}, { recordGetter: true });
+  const spy = moxy({} as any, { recordGetter: true });
   spy.code = 'James Bond';
   spy.introduce = introduce;
 

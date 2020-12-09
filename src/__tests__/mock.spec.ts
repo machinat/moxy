@@ -100,7 +100,7 @@ describe('#proxify(source, mock)', () => {
       mockMethod: false,
       includeProperties: ['handle'],
     });
-    mockInstance.handle.mock.fakeReturnValue(handler);
+    (mockInstance.handle as any).mock.fakeReturnValue(handler);
 
     global.Proxy = moxy(class {}, {
       mockNewInstance: false,
@@ -113,7 +113,7 @@ describe('#proxify(source, mock)', () => {
     const obj = {};
     const moxiedObj = mockInstance.proxify(obj);
 
-    expect(mockInstance.handle.mock.calls).toEqual([
+    expect((mockInstance.handle as any).mock.calls).toEqual([
       new Call({ args: [fn], instance: mockInstance, result: handler }),
       new Call({ args: [obj], instance: mockInstance, result: handler }),
     ]);

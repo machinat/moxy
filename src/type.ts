@@ -1,16 +1,16 @@
 import Mock from './mock';
 
-export type MoxyFunc = (
-  target?: object | Function,
-  options?: MockOptionsInput
-) => any;
+export type Proxifiable = object | Function;
+
+export type FunctionImpl = (...args: any[]) => unknown;
+
+export type WrapImplFunctor = (original: FunctionImpl) => FunctionImpl;
 
 // eslint-disable-next-line typescript/no-use-before-define
 export interface PropMockMapping {
   [k: string /* | number | symbol */]: Mock;
+  // FIXME: wait for Microsoft/TypeScript#26797 to support 👆
 }
-// FIXME: wait for Microsoft/TypeScript#26797 to support 👆
-export type Proxifiable = object | Function;
 
 export type ProxyMiddleware = (
   handler: ProxyHandler<Proxifiable>,

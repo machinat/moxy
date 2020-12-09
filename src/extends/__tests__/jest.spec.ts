@@ -9,7 +9,7 @@ function addAll(...args: number[]): number {
 }
 
 it('attaches required jest fn mock properties to Mock.prototype', () => {
-  const fn = moxy(addAll);
+  const fn: any = moxy(addAll);
 
   expect(fn[MOXY]._isMockFunction).toBe(true);
   expect(fn[MOXY].getMockName()).toBe('moxy');
@@ -43,7 +43,7 @@ it('attaches required jest fn mock properties to Mock.prototype', () => {
 });
 
 it('is compatible with jest function calling expections', () => {
-  const fn = moxy(addAll);
+  const fn: any = moxy(addAll);
 
   fn();
   fn(1, 2, 3);
@@ -73,7 +73,7 @@ it('is compatible with jest function calling expections', () => {
 
 describe('attachJestFnMockProps middleware', () => {
   it('attaches required jest fn mock props to the moxied function', () => {
-    const fn = moxy(addAll, { middlewares: [attachJestFnMockProps()] });
+    const fn: any = moxy(addAll, { middlewares: [attachJestFnMockProps()] });
 
     fn(1, 2, 3);
 
@@ -87,7 +87,7 @@ describe('attachJestFnMockProps middleware', () => {
   });
 
   it('works to pass the moxied function to expect directly', () => {
-    const fn = moxy(addAll, { middlewares: [attachJestFnMockProps()] });
+    const fn: any = moxy(addAll, { middlewares: [attachJestFnMockProps()] });
 
     fn();
     fn(1, 2, 3);

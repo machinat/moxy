@@ -16,7 +16,7 @@ export const isProxifiable = (target: any): target is Proxifiable =>
     !(target instanceof Promise)) ||
   typeof target === 'function';
 
-export const isFunctionProp = (
+export const isFunctionProtoProp = (
   source: Proxifiable,
   propName: number | string | symbol
 ): boolean =>

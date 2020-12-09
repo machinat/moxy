@@ -3,5 +3,8 @@
     "exclude": [
       "node_modules",
       "**/*.spec.ts"
-    ]
+    ],
+    "compilerOptions": {
+      "declaration": true
+    }
 }
