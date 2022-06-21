@@ -24,6 +24,7 @@ module.exports = {
       exceptAfterSingleLine: true,
     }],
     'prefer-arrow-callback': 0,
+    'import/prefer-default-export': 0,
     'import/extensions': 0,
     '@typescript-eslint/indent': 0,
     '@typescript-eslint/no-explicit-any': 0,

@@ -28,7 +28,7 @@ const JestFnDescriptor = {
 
 Object.defineProperties(Mock.prototype, JestFnDescriptor);
 
-const attachJestFnMockProps = (): ProxyMiddleware => (
+export const attachJestFnProperties = (): ProxyMiddleware => (
   handler,
   source,
   mock
@@ -43,5 +43,3 @@ const attachJestFnMockProps = (): ProxyMiddleware => (
     return handler.get(target, propKey, receiver);
   },
 });
-
-export default attachJestFnMockProps;

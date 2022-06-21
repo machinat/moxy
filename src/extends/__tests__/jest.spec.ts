@@ -1,5 +1,5 @@
 import { factory } from '../..';
-import attachJestFnMockProps from '../jest';
+import { attachJestFnProperties } from '../jest';
 
 const MOXY = Symbol('moxy');
 const moxy = factory({ accessKey: MOXY });
@@ -71,9 +71,9 @@ it('is compatible with jest function calling expections', () => {
   expect(fn[MOXY]).toHaveNthReturnedWith(1, 0);
 });
 
-describe('attachJestFnMockProps middleware', () => {
+describe('attachJestFnProperties middleware', () => {
   it('attaches required jest fn mock props to the moxied function', () => {
-    const fn: any = moxy(addAll, { middlewares: [attachJestFnMockProps()] });
+    const fn: any = moxy(addAll, { middlewares: [attachJestFnProperties()] });
 
     fn(1, 2, 3);
 
@@ -87,7 +87,7 @@ describe('attachJestFnMockProps middleware', () => {
   });
 
   it('works to pass the moxied function to expect directly', () => {
-    const fn: any = moxy(addAll, { middlewares: [attachJestFnMockProps()] });
+    const fn: any = moxy(addAll, { middlewares: [attachJestFnProperties()] });
 
     fn();
     fn(1, 2, 3);
