@@ -2,7 +2,10 @@
   "name": "@moxyjs/moxy",
   "version": "0.1.0-beta.3",
   "description": "",
-  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./jest": "./lib/extends/jest.ts"
+  },
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
     "prepare": "npm run build",
