@@ -1,7 +1,7 @@
 {
   "name": "@moxyjs/moxy",
-  "version": "0.1.0-beta.3",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Mock everything with Proxy",
   "exports": {
     ".": "./lib/index.js",
     "./jest": "./lib/extends/jest.ts"
