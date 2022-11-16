@@ -203,6 +203,26 @@ export default class Mock {
     return this;
   }
 
+  public fakeResolvedValue(val: any): this {
+    this.fakeReturnValue(Promise.resolve(val));
+    return this;
+  }
+
+  public fakeResolvedValueOnce(val: any): this {
+    this.fakeReturnValueOnce(Promise.resolve(val));
+    return this;
+  }
+
+  public fakeRejectedValue(val: any): this {
+    this.fakeReturnValue(Promise.reject(val));
+    return this;
+  }
+
+  public fakeRejectedValueOnce(val: any): this {
+    this.fakeReturnValueOnce(Promise.reject(val));
+    return this;
+  }
+
   public handle(source: Proxifiable): ProxyHandler<Proxifiable> {
     const baseHandler = this._createBaseHandler(source);
 
