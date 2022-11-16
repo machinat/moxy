@@ -1,14 +1,12 @@
 import { isMatch as matchPatterns } from 'micromatch';
 
 import Call from './call';
-import {
-  createProxyTargetDouble,
-  clearPropMockMapping,
-  isProxifiable,
-  isFunctionProtoProp,
-  formatUnproxifiable,
-  checkPropIsSetter,
-} from './utils';
+import createProxyTargetDouble from './utils/createProxyTargetDouble';
+import clearPropMockMapping from './utils/clearPropMockMapping';
+import isProxifiable from './utils/isProxifiable';
+import isFunctionProtoProp from './utils/isFunctionProtoProp';
+import formatUnproxifiable from './utils/formatUnproxifiable';
+import checkPropIsSetter from './utils/checkPropIsSetter';
 
 import {
   MockOptions,

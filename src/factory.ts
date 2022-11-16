@@ -1,5 +1,5 @@
 import Mock from './mock';
-import { concatOptions } from './utils';
+import concatOptions from './utils/concatOptions';
 import { MockOptionsInput, Proxifiable, Moxy } from './types';
 
 function empty(): void {}
