@@ -21,6 +21,9 @@ import {
   IS_MOXY,
 } from './types';
 
+/**
+ * The underlying controller that handle the mocking logic and track calls
+ */
 export default class Mock {
   public options: MockOptions;
 
@@ -83,12 +86,19 @@ export default class Mock {
     this.reset();
   }
 
+  /**
+   * Function calls triggered on the mock. It's emptied after `.clear()` or `.reset()`
+   */
   public get calls(): Call[] {
     // NOTE: returns a copy of _calls to prevent it keeps growing while deeply
     //       comparing the calls which might traverse through the moxied object
     return [...this._calls];
   }
 
+  /**
+   * Create a proxy of the target. Operations to the proxied instance are
+   * tracked and can be faked by the mock
+   */
   public proxify<T extends Proxifiable>(source: T): Moxy<T> {
     if (!isProxifiable(source)) {
       throw new TypeError(
@@ -103,6 +113,10 @@ export default class Mock {
     return proxified;
   }
 
+  /**
+   * Return a mock that tracks and fakes getter actions on a property. Note that
+   * the getter calls are recorded only when `recordGetter` option is set to `true`
+   */
   public getter(prop: number | string | symbol): Mock {
     if (Object.prototype.hasOwnProperty.call(this.getterMocks, prop)) {
       return this.getterMocks[prop];
@@ -110,6 +124,10 @@ export default class Mock {
     return (this.getterMocks[prop] = new Mock());
   }
 
+  /**
+   * Return a mock that tracks and fakes setter actions on a property. You can
+   * stop recording setter calls by setting `recordSetter` to `false`
+   */
   public setter(prop: number | string | symbol): Mock {
     if (Object.prototype.hasOwnProperty.call(this.setterMocks, prop)) {
       return this.setterMocks[prop];
@@ -117,6 +135,9 @@ export default class Mock {
     return (this.setterMocks[prop] = new Mock());
   }
 
+  /**
+   * Clear calling records of the mock and children mocks of its properties
+   */
   public clear(): this {
     this._initCalls();
     this._proxifiedOfValues = new Map();
@@ -131,6 +152,10 @@ export default class Mock {
     return this;
   }
 
+  /**
+   * Clear calling records and faked implementations of the mock and children
+   * mocks of its properties
+   */
   public reset(): this {
     this._initCalls();
 
@@ -146,29 +171,42 @@ export default class Mock {
     return this;
   }
 
+  /**
+   * Wrap a faked implementation around the original function
+   */
   public wrap(wrapper: WrapImplFunctor): this {
     this._mainWrapper = wrapper;
     return this;
   }
 
+  /**
+   * Wrap a faked implementation only once. If called many times, implementations
+   * are executed in the calling orders
+   */
   public wrapOnce(wrapper: WrapImplFunctor): this {
     this._oneOffWrapperQueue.push(wrapper);
     return this;
   }
 
+  /**
+   * Fake implementation function of the target
+   */
   public fake(implementation: FunctionImpl): this {
     this.wrap(() => implementation);
     return this;
   }
 
+  /**
+   * Fake implementation function only when calling args match by predicate function
+   */
   public fakeWhenArgs(
-    matcher: (...args: any[]) => boolean,
+    predicate: (...args: any[]) => boolean,
     implementation: FunctionImpl
   ): this {
     const lastWrapper = this._mainWrapper;
 
     const whenArgsFunctor = (source: FunctionImpl) => (...args: any[]): any => {
-      if (matcher(...args)) {
+      if (predicate(...args)) {
         return implementation(...args);
       }
 
@@ -179,41 +217,69 @@ export default class Mock {
     return this;
   }
 
+  /**
+   * Fake implementation function only once. If called many times, implementations
+   * are executed in the calling orders
+   */
   public fakeOnce(implementation: FunctionImpl): this {
     this.wrapOnce(() => implementation);
     return this;
   }
 
+  /**
+   * Fake returned value of the target function
+   */
   public fakeReturnValue(val: any): this {
     this.wrap(() => () => val);
     return this;
   }
 
+  /**
+   * Fake returned value of the target function. If called many times, implementations
+   * are executed in the calling orders
+   */
   public fakeReturnValueOnce(val: any): this {
     this.wrapOnce(() => () => val);
     return this;
   }
 
+  /**
+   * Fake the target function by returning a resolved promise
+   */
   public fakeResolvedValue(val: any): this {
     this.fakeReturnValue(Promise.resolve(val));
     return this;
   }
 
+  /**
+   * Fake the target function by returning a resolved promise only once. If called
+   * many times, implementations are executed in the calling orders
+   */
   public fakeResolvedValueOnce(val: any): this {
     this.fakeReturnValueOnce(Promise.resolve(val));
     return this;
   }
 
+  /**
+   * Fake the target function by returning a rejected promise
+   */
   public fakeRejectedValue(val: any): this {
     this.fakeReturnValue(Promise.reject(val));
     return this;
   }
 
+  /**
+   * Fake the target function by returning a rejected promise only once. If called
+   * many times, implementations are executed in the calling orders
+   */
   public fakeRejectedValueOnce(val: any): this {
     this.fakeReturnValueOnce(Promise.reject(val));
     return this;
   }
 
+  /**
+   * Return the proxy handler for the target to mock
+   */
   public handle(source: Proxifiable): ProxyHandler<Proxifiable> {
     const baseHandler = this._createBaseHandler(source);
 

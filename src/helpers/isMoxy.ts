@@ -1,5 +1,6 @@
 import { Proxifiable, IsMoxyWildcard, IS_MOXY } from '../types';
 
+/** Check if the target is mocked by moxy */
 const isMoxy = (moxied: Proxifiable): boolean =>
   (moxied as IsMoxyWildcard)[IS_MOXY] === true;
 

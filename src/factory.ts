@@ -4,6 +4,7 @@ import { MockOptionsInput, Proxifiable, Moxy } from './types';
 
 function empty(): void {}
 
+/** Create a mocking function with specified mock options */
 const moxyFactory = (defaultOptions: MockOptionsInput = {}) => <
   T extends Proxifiable = any
 >(
