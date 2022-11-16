@@ -4,7 +4,7 @@
     "target": "es2017",
     "outDir": "lib",
     "strict": true,
-    "removeComments": true,
+    "removeComments": false,
     "preserveConstEnums": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,

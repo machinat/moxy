@@ -1,6 +1,6 @@
 {
   "name": "@moxyjs/moxy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mock everything with Proxy",
   "exports": {
     ".": "./lib/index.js",
@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
+    "clean": "rm -r ./lib",
     "prepare": "npm run build",
     "test": "jest"
   },
@@ -20,6 +21,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "files":[
+    "lib",
+    "media"
+  ],
   "devDependencies": {
     "@types/jest": "^24.0.11",
     "@typescript-eslint/eslint-plugin": "^1.4.2",
