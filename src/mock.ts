@@ -7,7 +7,7 @@ import isProxifiable from './utils/isProxifiable';
 import isFunctionProtoProp from './utils/isFunctionProtoProp';
 import formatUnproxifiable from './utils/formatUnproxifiable';
 import checkPropIsSetter from './utils/checkPropIsSetter';
-
+import isMoxy from './helpers/isMoxy';
 import {
   MockOptions,
   Proxifiable,
@@ -17,13 +17,9 @@ import {
   FunctionImpl,
   WrapImplFunctor,
   Moxy,
+  MockAccossorWildcard,
+  IS_MOXY,
 } from './types';
-
-const IS_MOXY = Symbol('is_moxy');
-
-export const isMoxy = (moxied: Proxifiable): boolean =>
-  // @ts-ignore it's Proxy magic!
-  moxied[IS_MOXY] === true;
 
 export default class Mock {
   public options: MockOptions;
@@ -107,21 +103,17 @@ export default class Mock {
     return proxified;
   }
 
-  // FIXME: wait Microsoft/TypeScript#26797 to support👇
-  public getter(prop: any /* number | string | symbol */): Mock {
+  public getter(prop: number | string | symbol): Mock {
     if (Object.prototype.hasOwnProperty.call(this.getterMocks, prop)) {
       return this.getterMocks[prop];
     }
-
     return (this.getterMocks[prop] = new Mock());
   }
 
-  // FIXME: wait Microsoft/TypeScript#26797 to support👇
-  public setter(prop: any /* number | string | symbol */): Mock {
+  public setter(prop: number | string | symbol): Mock {
     if (Object.prototype.hasOwnProperty.call(this.setterMocks, prop)) {
       return this.setterMocks[prop];
     }
-
     return (this.setterMocks[prop] = new Mock());
   }
 
@@ -131,8 +123,7 @@ export default class Mock {
 
     // clear also mock of proxified props
     for (const proxiedProp of this._proxifiedOfProps.values()) {
-      // @ts-ignore it's Proxy magic
-      proxiedProp[this.options.accessKey].clear();
+      (proxiedProp as MockAccossorWildcard)[this.options.accessKey].clear();
     }
 
     clearPropMockMapping(this.getterMocks);

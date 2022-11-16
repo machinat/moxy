@@ -13,10 +13,8 @@ export type Moxy<T> = T & { mock: Mock } & {
     [K in keyof T]: T[K] extends FunctionImpl ? T[K] & { mock: Mock } : unknown
   };
 
-// eslint-disable-next-line typescript/no-use-before-define
 export interface PropMockMapping {
-  [k: string /* | number | symbol */]: Mock;
-  // FIXME: wait for Microsoft/TypeScript#26797 to support 👆
+  [k: string | number | symbol]: Mock;
 }
 
 export type ProxyMiddleware = (
@@ -40,3 +38,13 @@ export interface MockOptions {
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
 
 export type ProxifiedCache = Map<Proxifiable, Proxifiable>;
+
+export const IS_MOXY = Symbol('is_moxy');
+
+export interface IsMoxyWildcard {
+  [IS_MOXY]?: true;
+}
+
+export interface MockAccossorWildcard {
+  [accessKey: string | symbol]: Mock;
+}

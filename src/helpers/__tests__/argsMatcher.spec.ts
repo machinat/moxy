@@ -1,13 +1,5 @@
-import Mock from '../mock';
-import Call from '../call';
-import {
-  equal,
-  beginWith,
-  endWith,
-  nthIs,
-  mockNewInstance,
-  mockCurryFunction,
-} from '../helpers';
+import Mock from '../../mock';
+import { equal, beginWith, endWith, nthIs } from '../argsMatcher';
 
 describe('equal', () => {
   test.each`
@@ -165,57 +157,5 @@ describe('nthIs', () => {
     expect(moxied([3], 999, 1)).toBe(1);
     expect(moxied([3, 2, 1], 999)).toBe(1);
     expect(moxied(5, 999, 3, 2, 1)).toBe(1);
-  });
-});
-
-describe('mockNewInstance', () => {
-  it('work with mock.wrap()', () => {
-    const instanceMock = new Mock();
-
-    const classMock = new Mock().wrap(mockNewInstance(instanceMock));
-    class Foo { someMethod() { } } // eslint-disable-line
-    const MoxiedFoo: any = classMock.proxify(Foo);
-
-    const foo1 = new MoxiedFoo();
-    expect(foo1.mock).toBe(instanceMock);
-
-    const foo2 = new MoxiedFoo();
-    expect(foo2.mock).toBe(instanceMock);
-
-    foo1.someMethod(1);
-    foo2.someMethod(2);
-
-    expect(foo1.someMethod.mock).toBe(foo2.someMethod.mock);
-    expect(foo1.someMethod.mock.calls).toEqual([
-      new Call({ args: [1], instance: foo1 }),
-      new Call({ args: [2], instance: foo2 }),
-    ]);
-  });
-});
-
-describe('mockCurryFunction', () => {
-  it('work with mock.wrap()', () => {
-    const mock = new Mock();
-    const curry: any = mock.proxify((a: number) => (b: number) => (c: number) =>
-      a + b + c
-    );
-
-    expect(curry(1)(2)(3)).toBe(6);
-
-    expect(curry.mock.calls.length).toBe(1);
-
-    mock.clear();
-    mock.wrap(mockCurryFunction(mock));
-
-    expect(curry(1)(2)(3)).toBe(6);
-
-    expect(curry.mock.calls.length).toBe(3);
-    expect(curry.mock.calls[0].args).toEqual([1]);
-    expect(curry.mock.calls[1].args).toEqual([2]);
-    expect(curry.mock.calls[2].args).toEqual([3]);
-
-    expect(typeof curry.mock.calls[0].result).toBe('function');
-    expect(typeof curry.mock.calls[1].result).toBe('function');
-    expect(curry.mock.calls[2].result).toBe(6);
   });
 });

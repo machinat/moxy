@@ -259,18 +259,12 @@ new Foo().bar(); // 'zaq'
 Or to mock a curried function:
 
 ```js
-const mock = new Mock();
-mock.wrap((originalFn) => (...args) => {
-  const nextValue = originalFn(...args);
+import moxy, { trackCurriedFunction } from '@moxyjs/moxy';
 
-  return typeof nextValue === 'function'
-    ? mock.proxify(nextValue)
-    : nextValue;
-});
-
-const curriedFn = mock.proxify(
+const curriedFn = moxy(
   () => () => () => '🍛'
 );
+curriedFn.mock.wrap(trackCurriedFunction());
 
 curriedFn('foo')('bar')('baz'); // '🍛'
 

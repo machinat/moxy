@@ -36,10 +36,9 @@ export const attachJestFnProperties = (): ProxyMiddleware => (
   ...handler,
   get(target, propKey, receiver) {
     if (propKey in JestFnDescriptor) {
-      // @ts-ignore it was mixed in
-      return mock[propKey];
+      return (mock as Mock & Record<string, unknown>)[propKey as string];
     }
-    // @ts-ignore handler.get() should exist
-    return handler.get(target, propKey, receiver);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return handler.get!(target, propKey, receiver);
   },
 });

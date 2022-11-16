@@ -1,24 +1,10 @@
 import moxy from '..';
 import Call from '../call';
-import Mock, { isMoxy } from '../mock';
-import { mockCurryFunction } from '../helpers';
+import Mock from '../mock';
+import isMoxy from '../helpers/isMoxy';
+import trackCurriedFunction from '../helpers/trackCurriedFunction';
 
 declare let global: { Proxy: any };
-
-describe('isMoxy()', () => {
-  it('tells if a target is moxied', () => {
-    function fn() {}
-    const obj = {};
-    expect(isMoxy(moxy(fn))).toBe(true);
-    expect(isMoxy(moxy(obj))).toBe(true);
-
-    expect(isMoxy(new Mock().proxify(fn))).toBe(true);
-    expect(isMoxy(new Mock().proxify(obj))).toBe(true);
-
-    expect(isMoxy(fn)).toBe(false);
-    expect(isMoxy(obj)).toBe(false);
-  });
-});
 
 it('is a constructor', () => {
   expect(typeof Mock).toBe('function');
@@ -191,7 +177,7 @@ describe(`Faking methods
     const moxied: any = mock.proxify(source);
 
     const functor = moxy(() => () => 1);
-    functor.mock.wrap(mockCurryFunction(functor.mock));
+    functor.mock.wrap(trackCurriedFunction());
 
     mock.wrap(functor);
 
@@ -218,8 +204,8 @@ describe(`Faking methods
 
     const functor1 = moxy(() => () => 1);
     const functor2 = moxy(() => () => 2);
-    functor1.mock.wrap(mockCurryFunction(functor1.mock));
-    functor2.mock.wrap(mockCurryFunction(functor2.mock));
+    functor1.mock.wrap(trackCurriedFunction());
+    functor2.mock.wrap(trackCurriedFunction());
 
     mock.wrapOnce(functor1);
     expect(moxied(1, 2, 3)).toBe(1);
@@ -606,8 +592,7 @@ describe('#handle()', () => {
     methodsShoudContain.forEach(method => {
       const middleware = (handler: ProxyHandler<any>) => {
         const incomplete = Object.assign({}, handler);
-        // @ts-ignore
-        delete incomplete[method];
+        delete (incomplete as Record<string, unknown>)[method];
         return incomplete;
       };
 
