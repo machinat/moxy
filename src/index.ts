@@ -19,7 +19,7 @@ type GlobalMoxy = typeof moxy & {
   readonly setDefaultOptions: (options: MockOptionsInput) => void;
 };
 
-const globalMoxy: GlobalMoxy = Object.defineProperties(moxy, {
+const globalMoxy = Object.defineProperties(moxy as GlobalMoxy, {
   defaultOptions: { value: defaultOptions },
   setDefaultOptions: { value: setDefaultOptions },
 });

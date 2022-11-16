@@ -4,7 +4,10 @@ export type Proxifiable = object | Function;
 
 export type FunctionImpl = (...args: any[]) => unknown;
 
-export type WrapImplFunctor = (original: FunctionImpl) => FunctionImpl;
+export type WrapImplFunctor = (
+  original: FunctionImpl,
+  mock: Mock
+) => FunctionImpl;
 
 export type Moxy<T> = T & { mock: Mock } & {
     [K in keyof T]: T[K] extends FunctionImpl ? T[K] & { mock: Mock } : unknown

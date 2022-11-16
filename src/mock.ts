@@ -183,7 +183,7 @@ export default class Mock {
         return implementation(...args);
       }
 
-      return lastWrapper ? lastWrapper(source)(...args) : source(...args);
+      return lastWrapper ? lastWrapper(source, this)(...args) : source(...args);
     };
 
     this.wrap(whenArgsFunctor);
@@ -461,11 +461,14 @@ export default class Mock {
 
   private _getFunctionImpl(source: FunctionImpl): FunctionImpl {
     if (this._oneOffWrapperQueue.length > 0) {
-      return (this._oneOffWrapperQueue.shift() as WrapImplFunctor)(source);
+      return (this._oneOffWrapperQueue.shift() as WrapImplFunctor)(
+        source,
+        this
+      );
     }
 
     if (this._mainWrapper !== undefined) {
-      return this._mainWrapper(source);
+      return this._mainWrapper(source, this);
     }
     return source;
   }

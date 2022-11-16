@@ -199,7 +199,7 @@ describe(`Faking methods
 
     expect(functor.mock.calls.length).toBe(2);
 
-    expect(functor.mock.calls[0].args).toEqual([source]);
+    expect(functor.mock.calls[0].args).toEqual([source, mock]);
     expect(typeof functor.mock.calls[0].result).toBe('function');
 
     expect(functor.mock.calls[1].args).toEqual([1, 2, 3]);
@@ -227,7 +227,7 @@ describe(`Faking methods
 
     expect(functor1.mock.calls.length).toBe(2);
 
-    expect(functor1.mock.calls[0].args).toEqual([source]);
+    expect(functor1.mock.calls[0].args).toEqual([source, mock]);
     expect(typeof functor1.mock.calls[0].result).toBe('function');
 
     expect(functor1.mock.calls[1].args).toEqual([1, 2, 3]);
