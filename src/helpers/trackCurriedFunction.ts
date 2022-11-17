@@ -1,8 +1,57 @@
+import Mock from '../mock';
 import { WrapImplFunctor, FunctionImpl } from '../types';
 
+const wrapNextFunction = (
+  nextValue: unknown,
+  mock: Mock,
+  fakedFinalValue: undefined | unknown,
+  depth: number,
+  maxDepth: number
+) => {
+  if (typeof nextValue !== 'function' || depth >= maxDepth) {
+    return fakedFinalValue === undefined ? nextValue : fakedFinalValue;
+  }
+
+  let hasBeenCalled = false;
+
+  const wrappedNextFn = (...args: any[]) => {
+    const nextNextValue = wrapNextFunction(
+      nextValue(...args),
+      mock,
+      fakedFinalValue,
+      depth + 1,
+      maxDepth
+    );
+
+    const call = mock.getCalls().find(({ result }) => result === wrappedNextFn);
+    if (call) {
+      if (depth === 0 && !hasBeenCalled) {
+        call.args = [call.args];
+      }
+
+      call.args[depth + 1] = args;
+      call.result = nextNextValue;
+    }
+
+    hasBeenCalled = true;
+    return nextNextValue;
+  };
+  return wrappedNextFn;
+};
+
 /**
- * Track all the descending curried function calls with root mock instance.
- * Use it like `curriedFn.mock.wrap(trackCurriedFunction())`
+ * Track all the following curried function calls. This transfer `Call.args` into a 2-dimension array
+ * that tracks args of each call on the chaining functions. Use it like:
+ * ```
+ * const curriedFn = moxy(a => b => c => a + b + c);
+ * curriedFn.mock.wrap(trackCurriedFunction());
+ *
+ * curriedFn(1)(2)(3);
+ * curriedFn(4)(5)(6);
+ *
+ * expect(curriedFn).toHaveBeenNthCalledWith(1, [1], [2], [3]);
+ * expect(curriedFn).toHaveBeenNthCalledWith(2, [4], [5], [6]);
+ * ```
  */
 const trackCurriedFunction = (
   /** Optionally fake the final returning value */
@@ -11,20 +60,12 @@ const trackCurriedFunction = (
    * Depth of curried function calls to track. If ommited, track till returning
    * value is not a function. It's useful when `returnValue` is a function
    */
-  depth: number = Infinity
+  length: number = Infinity
 ): WrapImplFunctor => {
-  let depthCountDown = depth;
-
   return (fn, mock) =>
     function mockCurriedFunction(this: FunctionImpl, ...args: any[]) {
       const nextValue = Reflect.apply(fn, this, args);
-      depthCountDown -= 1;
-
-      return typeof nextValue === 'function' && depthCountDown > 0
-        ? mock.proxify(nextValue)
-        : returnValue === undefined
-        ? nextValue
-        : returnValue;
+      return wrapNextFunction(nextValue, mock, returnValue, 0, length - 1);
     };
 };
 

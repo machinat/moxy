@@ -144,13 +144,13 @@ describe('.getCalls()', () => {
 });
 
 describe(`Faking methods
-  #wrap(functor)
-  #wrapOnce(functor)
-  #fake(impl)
-  #fakeWhenArgs(matcher, impl)
-  #fakeOnce(impl)
-  #fakeReturnValue(val)
-  #fakeReturnValueOnce(val)
+  .wrap(functor)
+  .wrapOnce(functor)
+  .fake(impl)
+  .fakeWhenArgs(matcher, impl)
+  .fakeOnce(impl)
+  .fakeReturnValue(val)
+  .fakeReturnValueOnce(val)
 `, () => {
   it('return mock itself', () => {
     const mock = new Mock();
@@ -171,25 +171,23 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  it('.wrap(wrapper) add wrapper for mocking implementation', () => {
+  it('.wrap(wrapper) wrap the original function to fake impl', () => {
     const mock = new Mock();
     const source = () => 0;
     const moxied: any = mock.proxify(source);
 
-    const functor = moxy(() => () => 1);
-    functor.mock.wrap(trackCurriedFunction());
+    const wrapper = moxy(() => () => 1);
+    wrapper.mock.wrap(trackCurriedFunction());
 
-    mock.wrap(functor);
+    mock.wrap(wrapper);
 
     expect(moxied(1, 2, 3)).toBe(1);
 
-    expect(functor.mock.getCalls().length).toBe(2);
-
-    expect(functor.mock.getCalls()[0].args).toEqual([source, mock]);
-    expect(typeof functor.mock.getCalls()[0].result).toBe('function');
-
-    expect(functor.mock.getCalls()[1].args).toEqual([1, 2, 3]);
-    expect(functor.mock.getCalls()[1].result).toBe(1);
+    const calls = wrapper.mock.getCalls();
+    expect(calls.length).toBe(1);
+    expect(calls[0].args[0]).toEqual([source, mock]);
+    expect(calls[0].args[1]).toEqual([1, 2, 3]);
+    expect(calls[0].result).toBe(1);
 
     expect(moxied()).toBe(1);
 
@@ -202,30 +200,27 @@ describe(`Faking methods
     const source = () => 0;
     const moxied: any = mock.proxify(source);
 
-    const functor1 = moxy(() => () => 1);
-    const functor2 = moxy(() => () => 2);
-    functor1.mock.wrap(trackCurriedFunction());
-    functor2.mock.wrap(trackCurriedFunction());
+    const wrapper1 = moxy(() => () => 1);
+    const wrapper2 = moxy(() => () => 2);
+    wrapper1.mock.wrap(trackCurriedFunction());
+    wrapper2.mock.wrap(trackCurriedFunction());
 
-    mock.wrapOnce(functor1);
+    mock.wrapOnce(wrapper1);
     expect(moxied(1, 2, 3)).toBe(1);
     expect(moxied(1, 2, 3)).toBe(0);
 
-    expect(functor1.mock.getCalls().length).toBe(2);
+    expect(wrapper1.mock.getCalls().length).toBe(1);
+    expect(wrapper1.mock.getCalls()[0].args[0]).toEqual([source, mock]);
+    expect(wrapper1.mock.getCalls()[0].args[1]).toEqual([1, 2, 3]);
+    expect(wrapper1.mock.getCalls()[0].result).toBe(1);
 
-    expect(functor1.mock.getCalls()[0].args).toEqual([source, mock]);
-    expect(typeof functor1.mock.getCalls()[0].result).toBe('function');
-
-    expect(functor1.mock.getCalls()[1].args).toEqual([1, 2, 3]);
-    expect(functor1.mock.getCalls()[1].result).toBe(1);
-
-    functor1.mock.clear();
-
-    mock.wrapOnce(functor1).wrap(functor2);
+    mock.wrapOnce(wrapper1).wrap(wrapper2);
 
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(2);
+    expect(wrapper1.mock.getCalls().length).toBe(2);
+    expect(wrapper2.mock.getCalls().length).toBe(2);
 
     mock.reset();
     expect(moxied()).toBe(0);
