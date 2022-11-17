@@ -1,44 +1,51 @@
+import moxy from '..';
 import Mock from '../mock';
 import { ProxyMiddleware } from '../types';
 
-const JestFnDescriptor = {
-  _isMockFunction: {
-    value: true,
-  },
-
-  getMockName: {
-    value: () => 'moxy',
-  },
-
-  mock: {
+Object.defineProperties(Mock.prototype, {
+  calls: {
     get() {
-      const { calls } = (this as unknown) as Mock;
-
-      return {
-        calls: calls.map(({ args }) => args),
-        results: calls.map(({ isThrow, result }) => ({
-          type: isThrow ? 'throw' : 'return',
-          value: result,
-        })),
-        instances: calls.map(({ instance }) => instance),
-      };
+      const mock = this as Mock;
+      return mock.getCalls().map(({ args }) => args);
     },
   },
-};
+  results: {
+    get() {
+      const mock = this as Mock;
+      return mock.getCalls().map(({ isThrow, result }) => ({
+        type: isThrow ? 'throw' : 'return',
+        value: result,
+      }));
+    },
+  },
+  instances: {
+    get() {
+      const mock = this as Mock;
+      return mock.getCalls().map(({ instance }) => instance);
+    },
+  },
+  mock: {
+    get() {
+      return this;
+    },
+  },
+});
 
-Object.defineProperties(Mock.prototype, JestFnDescriptor);
-
-export const attachJestFnProperties = (): ProxyMiddleware => (
-  handler,
-  source,
-  mock
-) => ({
+const attachJestFnProperties: ProxyMiddleware = (handler, source) => ({
   ...handler,
   get(target, propKey, receiver) {
-    if (propKey in JestFnDescriptor) {
-      return (mock as Mock & Record<string, unknown>)[propKey as string];
+    if (propKey === '_isMockFunction') {
+      return true;
+    }
+    if (propKey === 'getMockName') {
+      const { name } = source as Function;
+      return () => (name ? `moxy(${name})` : 'moxy');
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return handler.get!(target, propKey, receiver);
   },
+});
+
+moxy.setDefaultOptions({
+  middlewares: [attachJestFnProperties],
 });

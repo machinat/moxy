@@ -87,11 +87,9 @@ export default class Mock {
   }
 
   /**
-   * Function calls triggered on the mock. It's emptied after `.clear()` or `.reset()`
+   * Get function calls triggered on the mock. Calls are emptied after `.clear()` or `.reset()`
    */
-  public get calls(): Call[] {
-    // NOTE: returns a copy of _calls to prevent it keeps growing while deeply
-    //       comparing the calls which might traverse through the moxied object
+  public getCalls(): Call[] {
     return [...this._calls];
   }
 
@@ -500,7 +498,7 @@ export default class Mock {
   }
 
   private _initCalls(): void {
-    // NOTE: to prevent infinity loops caused by _calls growing while deeply comparing mocks
+    // HACK: to prevent infinity loops caused by _calls growing while deeply comparing mocks
     Object.defineProperties(this, {
       _calls: {
         enumerable: false,

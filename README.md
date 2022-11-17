@@ -65,8 +65,8 @@ hello('foo'); // 'bar'
 hello.mock.fakeReturnValue('baz')
 hello('foo'); // 'baz'
 
-expect(hello.mock).toHaveBeenCalledTimes(3);
-expect(hello.mock).toHaveBeenCalledWith('foo');
+expect(hello).toHaveBeenCalledTimes(3);
+expect(hello).toHaveBeenCalledWith('foo');
 ```
 
 ##### Fake once
@@ -153,7 +153,7 @@ Return the mocked value
 
 The mocking operator class
 
-- `calls` - `Call[]`, the calling records
+- `getCalls()` - return the function `Call` array
 - `getter(key)` - return the getter `Mock` of a property
 - `setter(key)` - return the setter `Mock` of a property
   - `key` - `string|symbol` - the property name
@@ -240,16 +240,18 @@ obj.foo.bar.baz.hello(); // 'there'
 This is useful to mock all instances of a class:
 
 ```js
-import { Mock } from '@moxyjs/moxy';
+import moxy, { Mock, trackNewInstances } from '@moxyjs/moxy';
 
 const fooMock = new Mock();
-
-const Foo = moxy(class Foo {
-  constructor() {
-    this.bar = 'baz'
-    return fooMock.proxify(this);
+const Foo = moxy(
+  class Foo {
+    bar() {
+      return 'baz';
+    }
   }
-});
+);
+Foo.mock.wrap(trackNewInstances(fooMock));
+
 new Foo().bar(); // 'baz'
 
 fooMock.getter('bar').fakeReturnValue('zaq');
@@ -291,34 +293,4 @@ const foo = moxy({ bar: 'baz' }, {
 
 delete foo.bar;
 foo.bar; // 'deleted'
-```
-
-##### Jest Expect Style
-
-If you don't like the `.mock` when making assertion, you can do this:
-
-```js
-// setup-jest.js
-const moxy = require('@moxyjs/moxy');
-const { attachJestFnProperties } = require('@moxyjs/moxy/jest');
-
-moxy.setDefaultOptions({
-  middlewares: [attachJestFnProperties],
-});
-```
-
-```js
-// jest.config.js
-module.exports = {
-  setupFiles: ['<rootDir>/setup-jest.js'],
-};
-```
-
-Then you can assert with the function directly, like:
-
-```js
-const foo = moxy();
-foo();
-
-expect(foo).toHaveBeenCalled();
 ```

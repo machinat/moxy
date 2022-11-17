@@ -2,9 +2,10 @@
   "name": "@moxyjs/moxy",
   "version": "0.1.1",
   "description": "Mock everything with Proxy",
+  "main": "./lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./jest": "./lib/extends/jest.ts"
+    "./jest": "./lib/extends/jest.js"
   },
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",

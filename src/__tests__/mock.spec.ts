@@ -11,7 +11,7 @@ it('is a constructor', () => {
   expect(() => new Mock()).not.toThrow();
 });
 
-describe('#constructor(options)', () => {
+describe('.constructor(options)', () => {
   it('init with expected default value', () => {
     expect(new Mock().options).toEqual({
       accessKey: 'mock',
@@ -66,13 +66,13 @@ describe('#constructor(options)', () => {
   it('initiate basic props', () => {
     const mock = new Mock();
 
-    expect(mock.calls).toEqual([]);
+    expect(mock.getCalls()).toEqual([]);
     expect(mock.setterMocks).toEqual({});
     expect(mock.getterMocks).toEqual({});
   });
 });
 
-describe('#proxify(source, mock)', () => {
+describe('.proxify(source, mock)', () => {
   const _Proxy = global.Proxy;
 
   afterEach(() => {
@@ -99,14 +99,14 @@ describe('#proxify(source, mock)', () => {
     const obj = {};
     const moxiedObj = mockInstance.proxify(obj);
 
-    expect((mockInstance.handle as any).mock.calls).toEqual([
+    expect((mockInstance.handle as any).mock.getCalls()).toEqual([
       new Call({ args: [fn], instance: mockInstance, result: handler }),
       new Call({ args: [obj], instance: mockInstance, result: handler }),
     ]);
 
-    expect(global.Proxy.mock.calls.length).toBe(2);
+    expect(global.Proxy.mock.getCalls().length).toBe(2);
 
-    const fnCall = global.Proxy.mock.calls[0];
+    const fnCall = global.Proxy.mock.getCalls()[0];
     expect(typeof fnCall.args[0]).toBe('function');
     expect(fnCall.args[0](1, 2, 3)).toBe(undefined);
     expect(fnCall.args[1]).toBe(handler);
@@ -119,7 +119,7 @@ describe('#proxify(source, mock)', () => {
       })
     );
 
-    expect(global.Proxy.mock.calls[1]).toEqual({
+    expect(global.Proxy.mock.getCalls()[1]).toEqual({
       args: [{}, handler],
       isThrow: false,
       isConstructor: true,
@@ -129,13 +129,13 @@ describe('#proxify(source, mock)', () => {
   });
 });
 
-describe('#calls()', () => {
+describe('.getCalls()', () => {
   it('returns a copy of _call', () => {
     const mock = new Mock();
     const moxied: any = mock.proxify(() => {});
 
     moxied();
-    const { calls } = mock;
+    const calls = mock.getCalls();
     expect(calls).toEqual([new Call()]);
 
     moxied();
@@ -171,7 +171,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  it('#wrap(wrapper) add wrapper for mocking implementation', () => {
+  it('.wrap(wrapper) add wrapper for mocking implementation', () => {
     const mock = new Mock();
     const source = () => 0;
     const moxied: any = mock.proxify(source);
@@ -183,13 +183,13 @@ describe(`Faking methods
 
     expect(moxied(1, 2, 3)).toBe(1);
 
-    expect(functor.mock.calls.length).toBe(2);
+    expect(functor.mock.getCalls().length).toBe(2);
 
-    expect(functor.mock.calls[0].args).toEqual([source, mock]);
-    expect(typeof functor.mock.calls[0].result).toBe('function');
+    expect(functor.mock.getCalls()[0].args).toEqual([source, mock]);
+    expect(typeof functor.mock.getCalls()[0].result).toBe('function');
 
-    expect(functor.mock.calls[1].args).toEqual([1, 2, 3]);
-    expect(functor.mock.calls[1].result).toBe(1);
+    expect(functor.mock.getCalls()[1].args).toEqual([1, 2, 3]);
+    expect(functor.mock.getCalls()[1].result).toBe(1);
 
     expect(moxied()).toBe(1);
 
@@ -197,7 +197,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  it('#wrapOnce(wrapper) add one-off wrapper that invoked only once', () => {
+  it('.wrapOnce(wrapper) add one-off wrapper that invoked only once', () => {
     const mock = new Mock();
     const source = () => 0;
     const moxied: any = mock.proxify(source);
@@ -211,13 +211,13 @@ describe(`Faking methods
     expect(moxied(1, 2, 3)).toBe(1);
     expect(moxied(1, 2, 3)).toBe(0);
 
-    expect(functor1.mock.calls.length).toBe(2);
+    expect(functor1.mock.getCalls().length).toBe(2);
 
-    expect(functor1.mock.calls[0].args).toEqual([source, mock]);
-    expect(typeof functor1.mock.calls[0].result).toBe('function');
+    expect(functor1.mock.getCalls()[0].args).toEqual([source, mock]);
+    expect(typeof functor1.mock.getCalls()[0].result).toBe('function');
 
-    expect(functor1.mock.calls[1].args).toEqual([1, 2, 3]);
-    expect(functor1.mock.calls[1].result).toBe(1);
+    expect(functor1.mock.getCalls()[1].args).toEqual([1, 2, 3]);
+    expect(functor1.mock.getCalls()[1].result).toBe(1);
 
     functor1.mock.clear();
 
@@ -231,7 +231,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  test('#fake(impl) mock function implementation', () => {
+  test('.fake(impl) mock function implementation', () => {
     const mock = new Mock();
     const moxied: any = mock.proxify(() => 0);
 
@@ -245,7 +245,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  it('#fakeWhenArgs(matcher, impl) mock function implementation when args match', () => {
+  it('.fakeWhenArgs(matcher, impl) mock function implementation when args match', () => {
     const mock = new Mock();
     const moxied: any = mock.proxify(() => 0);
 
@@ -256,12 +256,12 @@ describe(`Faking methods
     expect(moxied(2)).toBe(1);
     expect(moxied(1)).toBe(0);
 
-    expect(matcher.mock.calls).toEqual([
+    expect(matcher.mock.getCalls()).toEqual([
       new Call({ args: [2], result: true }),
       new Call({ args: [1], result: false }),
     ]);
 
-    expect(impl.mock.calls).toEqual([new Call({ args: [2], result: 1 })]);
+    expect(impl.mock.getCalls()).toEqual([new Call({ args: [2], result: 1 })]);
 
     mock.fakeReturnValue(2).fakeWhenArgs(matcher, impl);
 
@@ -272,7 +272,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  test('#fakeOnce(impl) mock function implementation only once', () => {
+  test('.fakeOnce(impl) mock function implementation only once', () => {
     const mock = new Mock();
     const moxied: any = mock.proxify(() => 0);
     const impletation = () => 1;
@@ -295,7 +295,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  it('#fakeReturnValue(val) mock the returned value', () => {
+  it('.fakeReturnValue(val) mock the returned value', () => {
     const mock = new Mock();
     const moxied: any = mock.proxify(() => 0);
 
@@ -308,7 +308,7 @@ describe(`Faking methods
     expect(moxied()).toBe(0);
   });
 
-  it('#fakeReturnValueOnce(val) mock return value only once ', () => {
+  it('.fakeReturnValueOnce(val) mock return value only once ', () => {
     const mock = new Mock();
     const moxied: any = mock.proxify(() => 0);
 
@@ -329,7 +329,7 @@ describe(`Faking methods
   });
 });
 
-describe('#setter(prop)', () => {
+describe('.setter(prop)', () => {
   it('returns mock instance of the setter', () => {
     const mock = new Mock();
     mock.proxify({ foo: 'bar' });
@@ -342,7 +342,7 @@ describe('#setter(prop)', () => {
   });
 });
 
-describe('#getter(prop)', () => {
+describe('.getter(prop)', () => {
   it('returns a mock instance of the getter', () => {
     const mock = new Mock();
     mock.proxify({ foo: 'bar' });
@@ -355,7 +355,7 @@ describe('#getter(prop)', () => {
   });
 });
 
-describe('#clear()', () => {
+describe('.clear()', () => {
   it('return the mock itself', () => {
     const mock = new Mock();
     expect(mock.clear()).toBe(mock);
@@ -368,10 +368,10 @@ describe('#clear()', () => {
     fn();
     fn();
 
-    expect(mock.calls.length).toBe(2);
+    expect(mock.getCalls().length).toBe(2);
 
     mock.clear();
-    expect(mock.calls).toEqual([]);
+    expect(mock.getCalls()).toEqual([]);
   });
 
   it('empty proxified values cache', () => {
@@ -383,10 +383,10 @@ describe('#clear()', () => {
     expect(r1).toEqual(result);
     expect(r1).not.toBe(result);
     expect(fn()).toBe(r1);
-    expect(fn.mock.calls.length).toBe(2);
+    expect(fn.mock.getCalls().length).toBe(2);
 
     fn.mock.clear();
-    expect(fn.mock.calls.length).toBe(0);
+    expect(fn.mock.getCalls().length).toBe(0);
 
     const r2 = fn();
     expect(r2).toEqual(result);
@@ -403,15 +403,15 @@ describe('#clear()', () => {
     expect(isMoxy(moxiedFoo)).toBe(true);
 
     expect(moxiedFoo()).toBe('bar');
-    expect(moxiedFoo.mock.calls.length).toBe(1);
+    expect(moxiedFoo.mock.getCalls().length).toBe(1);
 
     moxiedFoo.mock.fakeReturnValue('baz');
     expect(moxiedFoo()).toBe('baz');
-    expect(moxiedFoo.mock.calls.length).toBe(2);
+    expect(moxiedFoo.mock.getCalls().length).toBe(2);
 
     mock.clear();
     expect(obj.foo).toBe(moxiedFoo);
-    expect(moxiedFoo.mock.calls.length).toBe(0);
+    expect(moxiedFoo.mock.getCalls().length).toBe(0);
     expect(moxiedFoo()).toBe('baz');
   });
 
@@ -437,23 +437,23 @@ describe('#clear()', () => {
 
     const fooSetterMock = mock.setter('foo');
     const fooGetterMock = mock.getter('foo');
-    expect(fooSetterMock.calls.length).toBe(1);
-    expect(fooGetterMock.calls.length).toBe(1);
+    expect(fooSetterMock.getCalls().length).toBe(1);
+    expect(fooGetterMock.getCalls().length).toBe(1);
 
     mock.clear();
 
     expect({}.hasOwnProperty.call(mock.setterMocks, 'foo')).toBe(true);
     expect({}.hasOwnProperty.call(mock.getterMocks, 'foo')).toBe(true);
 
-    expect(mock.setter('foo').calls).toEqual([]);
-    expect(mock.getter('foo').calls).toEqual([]);
+    expect(mock.setter('foo').getCalls()).toEqual([]);
+    expect(mock.getter('foo').getCalls()).toEqual([]);
 
     expect(mock.setter('foo')).toBe(fooSetterMock);
     expect(mock.getter('foo')).toBe(fooGetterMock);
   });
 });
 
-describe('#reset()', () => {
+describe('.reset()', () => {
   it('return the mock itself', () => {
     const mock = new Mock();
     expect(mock.clear()).toBe(mock);
@@ -466,10 +466,10 @@ describe('#reset()', () => {
     fn();
     fn();
 
-    expect(mock.calls.length).toBe(2);
+    expect(mock.getCalls().length).toBe(2);
 
     mock.reset();
-    expect(mock.calls).toEqual([]);
+    expect(mock.getCalls()).toEqual([]);
   });
 
   it('cleans cache of proxified values', () => {
@@ -512,8 +512,8 @@ describe('#reset()', () => {
 
     const fooSetterMock = mock.setter('foo');
     const fooGetterMock = mock.getter('foo');
-    expect(fooSetterMock.calls.length).toBe(1);
-    expect(fooGetterMock.calls.length).toBe(1);
+    expect(fooSetterMock.getCalls().length).toBe(1);
+    expect(fooGetterMock.getCalls().length).toBe(1);
 
     mock.reset();
 
@@ -522,8 +522,8 @@ describe('#reset()', () => {
 
     expect(mock.setter('foo')).not.toBe(fooSetterMock);
     expect(mock.getter('foo')).not.toBe(fooGetterMock);
-    expect(mock.setter('foo').calls).toEqual([]);
-    expect(mock.getter('foo').calls).toEqual([]);
+    expect(mock.setter('foo').getCalls()).toEqual([]);
+    expect(mock.getter('foo').getCalls()).toEqual([]);
   });
 
   it('empty faked implementations', () => {
@@ -541,7 +541,7 @@ describe('#reset()', () => {
   });
 });
 
-describe('#handle()', () => {
+describe('.handle()', () => {
   it('return proxy handler', () => {
     const mock = new Mock();
     const handler = mock.handle({});
@@ -562,22 +562,22 @@ describe('#handle()', () => {
     const source = {};
     const handler = mock.handle(source);
 
-    expect(middlewares[0].mock.calls.length).toBe(1);
-    expect(middlewares[1].mock.calls.length).toBe(1);
-    expect(middlewares[2].mock.calls.length).toBe(1);
+    expect(middlewares[0].mock.getCalls().length).toBe(1);
+    expect(middlewares[1].mock.getCalls().length).toBe(1);
+    expect(middlewares[2].mock.getCalls().length).toBe(1);
 
-    const middleware1Call = middlewares[0].mock.calls[0];
+    const middleware1Call = middlewares[0].mock.getCalls()[0];
     expect(typeof middleware1Call.args[0]).toBe('object');
     expect(middleware1Call.args[1]).toBe(source);
     expect(middleware1Call.args[2]).toBe(mock);
 
-    const middleware2Call = middlewares[1].mock.calls[0];
+    const middleware2Call = middlewares[1].mock.getCalls()[0];
     expect(middleware2Call.args[0]).not.toBe(middleware1Call.args[0]);
     expect(middleware2Call.args[0]).toBe(middleware1Call.result);
     expect(middleware2Call.args[1]).toBe(source);
     expect(middleware2Call.args[2]).toBe(mock);
 
-    const middleware3Call = middlewares[2].mock.calls[0];
+    const middleware3Call = middlewares[2].mock.getCalls()[0];
     expect(middleware3Call.args[0]).not.toBe(middleware2Call.args[0]);
     expect(middleware3Call.args[0]).toBe(middleware2Call.result);
     expect(middleware3Call.args[1]).toBe(source);
@@ -666,7 +666,7 @@ describe('#handle()', () => {
       moxied.foo = 'baz';
       expect(moxied.foo).toBe('baz');
 
-      expect(getFooMock.calls).toEqual([]);
+      expect(getFooMock.getCalls()).toEqual([]);
     });
 
     it('store getter calls if options.recordGetter set to true', () => {
@@ -679,7 +679,7 @@ describe('#handle()', () => {
       moxied.foo = 'baz';
       expect(moxied.foo).toBe('baz');
 
-      expect(getFooMock.calls).toEqual([
+      expect(getFooMock.getCalls()).toEqual([
         new Call({ result: 'bar', instance: moxied }),
         new Call({ result: 'baz', instance: moxied }),
       ]);
@@ -700,7 +700,7 @@ describe('#handle()', () => {
       expect(moxied.foo).toBe('car');
       expect(moxied.foo).toBe('car');
 
-      expect(getFooMock.calls).toEqual([
+      expect(getFooMock.getCalls()).toEqual([
         new Call({ result: 'bar', instance: moxied }),
         new Call({ result: 'baz', instance: moxied }),
         new Call({ result: 'car', instance: moxied }),
@@ -710,7 +710,7 @@ describe('#handle()', () => {
       getFooMock.reset();
 
       expect(moxied.foo).toBe('bar');
-      expect(getFooMock.calls).toEqual([
+      expect(getFooMock.getCalls()).toEqual([
         new Call({ result: 'bar', instance: moxied }),
       ]);
     });
@@ -939,7 +939,7 @@ describe('#handle()', () => {
       moxied.foo = 'baz';
       expect(moxied.foo).toBe('baz');
 
-      expect(setFooMock.calls).toEqual([]);
+      expect(setFooMock.getCalls()).toEqual([]);
     });
 
     it('store setter calls when options.recordSetter set to true', () => {
@@ -954,7 +954,7 @@ describe('#handle()', () => {
       moxied.foo = 'rap';
       expect(moxied.foo).toBe('rap');
 
-      expect(setFooMock.calls).toEqual([
+      expect(setFooMock.getCalls()).toEqual([
         new Call({ args: ['baz'], instance: moxied }),
         new Call({ args: ['rap'], instance: moxied }),
       ]);
@@ -981,7 +981,7 @@ describe('#handle()', () => {
       moxied.foo = 'baz';
       expect(moxied).toEqual({ foo: 'bar', _foo: 'foofoobarbaz' });
 
-      expect(setFooMock.calls).toEqual([
+      expect(setFooMock.getCalls()).toEqual([
         new Call({ args: ['foo'], instance: moxied }),
         new Call({ args: ['bar'], instance: moxied }),
         new Call({ args: ['baz'], instance: moxied }),
@@ -992,7 +992,7 @@ describe('#handle()', () => {
       moxied.foo = 'foooo';
       expect(moxied).toEqual({ foo: 'foooo', _foo: 'foofoobarbaz' });
 
-      expect(setFooMock.calls).toEqual([
+      expect(setFooMock.getCalls()).toEqual([
         new Call({ args: ['foooo'], instance: moxied }),
       ]);
     });
@@ -1039,7 +1039,7 @@ describe('#handle()', () => {
       expect(moxied1).toBeInstanceOf(Moxied);
       expect(moxied2).toBeInstanceOf(Moxied);
 
-      expect(Moxied.mock.calls).toEqual([
+      expect(Moxied.mock.getCalls()).toEqual([
         new Call({ instance: moxied1, isConstructor: true }),
         new Call({ args: [0, 1, 2], instance: moxied2, isConstructor: true }),
       ]);
@@ -1080,7 +1080,7 @@ describe('#handle()', () => {
       expect(foo).toBeInstanceOf(Foo);
       expect(foo).toBeInstanceOf(MoxiedFoo);
 
-      expect(MoxiedFoo.mock.calls).toEqual([
+      expect(MoxiedFoo.mock.getCalls()).toEqual([
         new Call({ isConstructor: true, instance: { bar: 'baz' } }),
         new Call({ isConstructor: true, instance: { faked: true } }),
       ]);
@@ -1108,7 +1108,7 @@ describe('#handle()', () => {
       expect(foo).not.toBeInstanceOf(MoxiedFoo);
       expect(Object.getPrototypeOf(foo)).toBe(Object.prototype);
 
-      expect(MoxiedFoo.mock.calls).toEqual([
+      expect(MoxiedFoo.mock.getCalls()).toEqual([
         new Call({ isConstructor: true, instance: { faked: true } }),
       ]);
     });
@@ -1130,7 +1130,7 @@ describe('#handle()', () => {
       expect(() => new MoxiedFoo()).toThrow('really bad instance!');
       expect(() => new MoxiedFoo("i'm good")).toThrow('really bad instance!');
 
-      expect(MoxiedFoo.mock.calls).toEqual([
+      expect(MoxiedFoo.mock.getCalls()).toEqual([
         new Call({
           isConstructor: true,
           instance: undefined,
@@ -1178,7 +1178,7 @@ describe('#handle()', () => {
       expect(foo1.mock.options).toEqual(mock.options);
 
       expect(foo1.bar()).toBe('baz');
-      expect(foo1.bar.mock.calls).toEqual([
+      expect(foo1.bar.mock.getCalls()).toEqual([
         new Call({ result: 'baz', instance: foo1 }),
       ]);
 
@@ -1221,7 +1221,7 @@ describe('#handle()', () => {
       expect(moxied('world')).toBe('hello world');
       expect(moxied(1, 2, 3)).toBe('hello 1');
 
-      expect(moxied.mock.calls).toEqual([
+      expect(moxied.mock.getCalls()).toEqual([
         new Call({ result: 'hello undefined' }),
         new Call({ args: ['world'], result: 'hello world' }),
         new Call({ args: [1, 2, 3], result: 'hello 1' }),
@@ -1241,7 +1241,7 @@ describe('#handle()', () => {
       expect(moxied('world')).toBe('hello dlrow');
       expect(moxied('there')).toBe('hello ereht');
 
-      expect(moxied.mock.calls).toEqual([
+      expect(moxied.mock.getCalls()).toEqual([
         new Call({ args: ['world'], result: 'hello world' }),
         new Call({ args: ['world'], result: 'hello dlrow' }),
         new Call({ args: ['there'], result: 'hello ereht' }),
@@ -1264,7 +1264,7 @@ describe('#handle()', () => {
       expect(() => moxied()).toThrow('bad!bad!bad!');
       expect(() => moxied('good')).toThrow('bad!bad!bad!');
 
-      expect(moxied.mock.calls).toEqual([
+      expect(moxied.mock.getCalls()).toEqual([
         new Call({ isThrow: true, result: new Error('bad') }),
         new Call({ args: ['good'], isThrow: true, result: new Error('bad') }),
         new Call({ isThrow: true, result: new Error('bad!bad!bad!') }),
@@ -1360,7 +1360,7 @@ describe('#handle()', () => {
       const moxied: any = mock.proxify(() => returnedValue);
 
       expect(moxied()).toBe(returnedValue);
-      expect(moxied.mock.calls[0].result).toBe(returnedValue);
+      expect(moxied.mock.getCalls()[0].result).toBe(returnedValue);
     });
 
     it('not proxify retrun value if options.mockReturn set to false', () => {
