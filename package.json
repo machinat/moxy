@@ -1,6 +1,6 @@
 {
   "name": "@moxyjs/moxy",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Mock everything with Proxy",
   "main": "./lib/index.js",
   "exports": {
