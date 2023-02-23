@@ -175,7 +175,7 @@ A function call record
 - `args` - `any[]`, the function call auguments
 - `result` - `any`, the returned value or the thrown error. 
 - `instance` - `any`, the bound object, i.e. `this`
-- `isThrow` - `boolean`, whether the call is thrown
+- `isThrown` - `boolean`, whether the call is thrown
 - `isConstructor` - `boolean`, whether it's a constructing call with `new`
 
 

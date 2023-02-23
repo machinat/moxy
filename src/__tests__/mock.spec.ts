@@ -112,7 +112,7 @@ describe('.proxify(source, mock)', () => {
     expect(fnCall.args[1]).toBe(handler);
     expect(fnCall).toEqual(
       expect.objectContaining({
-        isThrow: false,
+        isThrown: false,
         isConstructor: true,
         instance: moxiedFn,
         result: undefined,
@@ -121,7 +121,7 @@ describe('.proxify(source, mock)', () => {
 
     expect(global.Proxy.mock.getCalls()[1]).toEqual({
       args: [{}, handler],
-      isThrow: false,
+      isThrown: false,
       isConstructor: true,
       instance: moxiedObj,
       result: undefined,
@@ -1129,27 +1129,27 @@ describe('.handle()', () => {
         new Call({
           isConstructor: true,
           instance: undefined,
-          isThrow: true,
+          isThrown: true,
           result: new Error('bad instance!'),
         }),
         new Call({
           args: ["i'm good"],
           isConstructor: true,
           instance: undefined,
-          isThrow: true,
+          isThrown: true,
           result: new Error('bad instance!'),
         }),
         new Call({
           isConstructor: true,
           instance: undefined,
-          isThrow: true,
+          isThrown: true,
           result: new Error('really bad instance!'),
         }),
         new Call({
           args: ["i'm good"],
           isConstructor: true,
           instance: undefined,
-          isThrow: true,
+          isThrown: true,
           result: new Error('really bad instance!'),
         }),
       ]);
@@ -1260,12 +1260,12 @@ describe('.handle()', () => {
       expect(() => moxied('good')).toThrow('bad!bad!bad!');
 
       expect(moxied.mock.getCalls()).toEqual([
-        new Call({ isThrow: true, result: new Error('bad') }),
-        new Call({ args: ['good'], isThrow: true, result: new Error('bad') }),
-        new Call({ isThrow: true, result: new Error('bad!bad!bad!') }),
+        new Call({ isThrown: true, result: new Error('bad') }),
+        new Call({ args: ['good'], isThrown: true, result: new Error('bad') }),
+        new Call({ isThrown: true, result: new Error('bad!bad!bad!') }),
         new Call({
           args: ['good'],
-          isThrow: true,
+          isThrown: true,
           result: new Error('bad!bad!bad!'),
         }),
       ]);

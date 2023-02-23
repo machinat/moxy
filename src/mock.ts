@@ -354,7 +354,7 @@ export default class Mock {
 
           return (call.result = property);
         } catch (err) {
-          call.isThrow = true;
+          call.isThrown = true;
           call.result = err;
 
           throw err;
@@ -386,7 +386,7 @@ export default class Mock {
           call.result = Reflect.apply(setterImpl, receiver, [value]);
           return success;
         } catch (err) {
-          call.isThrow = true;
+          call.isThrown = true;
           call.result = err;
 
           throw err;
@@ -411,7 +411,7 @@ export default class Mock {
 
           return (call.instance = instance);
         } catch (err) {
-          call.isThrow = true;
+          call.isThrown = true;
           call.result = err;
 
           throw err;
@@ -442,7 +442,7 @@ export default class Mock {
 
           return (call.result = result);
         } catch (err) {
-          call.isThrow = true;
+          call.isThrown = true;
           call.result = err;
 
           throw err;
