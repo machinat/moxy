@@ -67,12 +67,14 @@ Object.defineProperties(Mock.prototype, {
 const attachJestFnProperties: ProxyMiddleware = (handler, source) => ({
   ...handler,
   get(target, propKey, receiver) {
-    if (propKey === '_isMockFunction') {
-      return true;
-    }
-    if (propKey === 'getMockName') {
-      const { name } = source as Function;
-      return () => (name ? `moxy(${name})` : 'moxy');
+    if (typeof source === 'function') {
+      if (propKey === '_isMockFunction') {
+        return true;
+      }
+      if (propKey === 'getMockName') {
+        const { name } = source;
+        return () => (name ? `moxy(${name})` : 'moxy');
+      }
     }
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return handler.get!(target, propKey, receiver);
