@@ -53,7 +53,7 @@ it('attaches required jest fn mock properties to Mock.prototype', () => {
 });
 
 it('is compatible with jest function calling expections', () => {
-  const fn: any = moxy(addAll);
+  const fn: any = moxy(addAll, { recordSetter: true });
 
   fn();
   fn(1, 2, 3);
@@ -79,4 +79,7 @@ it('is compatible with jest function calling expections', () => {
   expect(fn).toHaveReturnedWith(6);
   expect(fn).toHaveLastReturnedWith(24);
   expect(fn).toHaveNthReturnedWith(1, 0);
+
+  fn.foo = 'bar';
+  expect(fn.mock.setter('foo')).toHaveBeenCalledTimes(1);
 });

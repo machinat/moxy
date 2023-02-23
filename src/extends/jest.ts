@@ -52,6 +52,16 @@ Object.defineProperties(Mock.prototype, {
       return this;
     },
   },
+  _isMockFunction: {
+    get() {
+      return true;
+    },
+  },
+  getMockName: {
+    get() {
+      return () => 'moxy';
+    },
+  },
 });
 
 const attachJestFnProperties: ProxyMiddleware = (handler, source) => ({
