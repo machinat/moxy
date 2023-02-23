@@ -1,19 +1,42 @@
 import moxy from '..';
 import Mock from '../mock';
+import Call from '../call';
 import { ProxyMiddleware } from '../types';
 
 Object.defineProperties(Mock.prototype, {
   calls: {
     get() {
       const mock = this as Mock;
-      return mock.getCalls().map(({ args }) => args);
+      return mock.getCalls().map(call => {
+        const compatibleCall = [...call.args] as any[] & Call;
+
+        Object.defineProperties(compatibleCall, {
+          args: {
+            value: call.args,
+          },
+          result: {
+            value: call.result,
+          },
+          instance: {
+            value: call.instance,
+          },
+          isThrown: {
+            value: call.isThrown,
+          },
+          isConstructor: {
+            value: call.isConstructor,
+          },
+        });
+
+        return compatibleCall;
+      });
     },
   },
   results: {
     get() {
       const mock = this as Mock;
-      return mock.getCalls().map(({ isThrow, result }) => ({
-        type: isThrow ? 'throw' : 'return',
+      return mock.getCalls().map(({ isThrown, result }) => ({
+        type: isThrown ? 'throw' : 'return',
         value: result,
       }));
     },

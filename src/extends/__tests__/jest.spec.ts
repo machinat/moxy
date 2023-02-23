@@ -23,11 +23,19 @@ it('attaches required jest fn mock properties to Mock.prototype', () => {
   fn.mock.fakeOnce(() => {
     throw new Error('bad bad number');
   });
-
   expect(fn).toThrow('bad bad number');
 
+  const { calls } = fn.mock;
+  expect(calls).toEqual([[], [1, 2, 3], [4, 5], [6], []]);
+  for (const [i, originalCall] of fn.mock.getCalls().entries()) {
+    expect(originalCall.args).toEqual(calls[i].args);
+    expect(originalCall.instance).toEqual(calls[i].instance);
+    expect(originalCall.result).toEqual(calls[i].result);
+    expect(originalCall.isThrown).toEqual(calls[i].isThrown);
+    expect(originalCall.isConstructor).toEqual(calls[i].isConstructor);
+  }
+
   expect(fn.mock.mock).toBe(fn.mock);
-  expect(fn.mock.calls).toEqual([[], [1, 2, 3], [4, 5], [6], []]);
   expect(fn.mock.instances).toEqual([
     undefined,
     undefined,
