@@ -86,6 +86,10 @@ export default class Mock {
     this.reset();
   }
 
+  public get calls() {
+    return this.getCalls();
+  }
+
   /**
    * Get function calls triggered on the mock. Calls are emptied after `.clear()` or `.reset()`
    */
