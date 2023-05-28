@@ -29,10 +29,9 @@ export default class Mock {
 
   private _calls!: Call[];
 
-  private _proxifiedOfDoubles: ProxifiedCache;
-
-  private _proxifiedOfValues!: ProxifiedCache;
-  private _proxifiedOfProps!: ProxifiedCache;
+  private _proxifiedDoubles: ProxifiedCache;
+  private _proxifiedValues!: ProxifiedCache;
+  private _proxifiedProps!: ProxifiedCache;
 
   public getterMocks!: PropMockMapping;
   public setterMocks!: PropMockMapping;
@@ -81,7 +80,7 @@ export default class Mock {
       ? excludeProperties.filter((p): p is string => typeof p === 'string')
       : [];
 
-    this._proxifiedOfDoubles = new Map();
+    this._proxifiedDoubles = new Map();
 
     this.reset();
   }
@@ -111,7 +110,7 @@ export default class Mock {
     const double: any = createProxyTargetDouble(source);
     const proxified = new Proxy(double, this.handle(source));
 
-    this._proxifiedOfDoubles.set(double, proxified);
+    this._proxifiedDoubles.set(double, proxified);
     return proxified;
   }
 
@@ -142,10 +141,10 @@ export default class Mock {
    */
   public clear(): this {
     this._initCalls();
-    this._proxifiedOfValues = new Map();
+    this._proxifiedValues = new Map();
 
     // clear also mock of proxified props
-    for (const proxiedProp of this._proxifiedOfProps.values()) {
+    for (const proxiedProp of this._proxifiedProps.values()) {
       (proxiedProp as MockAccossorWildcard)[this.options.accessKey].clear();
     }
 
@@ -161,8 +160,8 @@ export default class Mock {
   public reset(): this {
     this._initCalls();
 
-    this._proxifiedOfValues = new Map();
-    this._proxifiedOfProps = new Map();
+    this._proxifiedValues = new Map();
+    this._proxifiedProps = new Map();
 
     this.getterMocks = {};
     this.setterMocks = {};
@@ -315,14 +314,14 @@ export default class Mock {
         // only report as moxied when get on the porxy itself but its descendants
         if (
           propKey === IS_MOXY &&
-          this._proxifiedOfDoubles.get(double) === receiver
+          this._proxifiedDoubles.get(double) === receiver
         ) {
           return true;
         }
 
         if (
           propKey === this.options.accessKey &&
-          this._proxifiedOfDoubles.get(double) === receiver
+          this._proxifiedDoubles.get(double) === receiver
         ) {
           return this;
         }
@@ -349,7 +348,7 @@ export default class Mock {
             !shouldGetFromSource &&
             isProxifiable(property)
           ) {
-            property = this._getProxified(this._proxifiedOfProps, property);
+            property = this._getProxified(this._proxifiedProps, property);
           }
 
           return (call.result = property);
@@ -406,7 +405,7 @@ export default class Mock {
           let instance = Reflect.construct(implementation, args, newTarget);
 
           if (this.options.mockNewInstance) {
-            instance = this._getProxified(this._proxifiedOfValues, instance);
+            instance = this._getProxified(this._proxifiedValues, instance);
           }
 
           return (call.instance = instance);
@@ -430,11 +429,11 @@ export default class Mock {
 
           if (this.options.mockReturn) {
             result = isProxifiable(result)
-              ? this._getProxified(this._proxifiedOfValues, result)
+              ? this._getProxified(this._proxifiedValues, result)
               : result instanceof Promise
               ? result.then(r =>
                   isProxifiable(r)
-                    ? this._getProxified(this._proxifiedOfValues, r)
+                    ? this._getProxified(this._proxifiedValues, r)
                     : r
                 )
               : result;
