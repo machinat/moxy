@@ -1,5 +1,4 @@
-import { isMatch as matchPatterns } from 'micromatch';
-
+import micromatch from 'micromatch';
 import Call from './call.js';
 import createProxyTargetDouble from './utils/createProxyTargetDouble.js';
 import clearPropMockMapping from './utils/clearPropMockMapping.js';
@@ -20,6 +19,8 @@ import type {
   Moxy,
   MockAccossorWildcard,
 } from './types.js';
+
+const matchPatterns = micromatch.isMatch;
 
 /**
  * The underlying controller that handle the mocking logic and track calls
