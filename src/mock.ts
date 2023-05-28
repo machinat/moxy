@@ -1,14 +1,15 @@
 import { isMatch as matchPatterns } from 'micromatch';
 
-import Call from './call';
-import createProxyTargetDouble from './utils/createProxyTargetDouble';
-import clearPropMockMapping from './utils/clearPropMockMapping';
-import isProxifiable from './utils/isProxifiable';
-import isFunctionProtoProp from './utils/isFunctionProtoProp';
-import formatUnproxifiable from './utils/formatUnproxifiable';
-import checkPropIsSetter from './utils/checkPropIsSetter';
-import isMoxy from './helpers/isMoxy';
-import {
+import Call from './call.js';
+import createProxyTargetDouble from './utils/createProxyTargetDouble.js';
+import clearPropMockMapping from './utils/clearPropMockMapping.js';
+import isProxifiable from './utils/isProxifiable.js';
+import isFunctionProtoProp from './utils/isFunctionProtoProp.js';
+import formatUnproxifiable from './utils/formatUnproxifiable.js';
+import checkPropIsSetter from './utils/checkPropIsSetter.js';
+import isMoxy from './helpers/isMoxy.js';
+import { IS_MOXY } from './constant.js';
+import type {
   MockOptions,
   Proxifiable,
   PropMockMapping,
@@ -18,8 +19,7 @@ import {
   WrapImplFunctor,
   Moxy,
   MockAccossorWildcard,
-  IS_MOXY,
-} from './types';
+} from './types.js';
 
 /**
  * The underlying controller that handle the mocking logic and track calls
@@ -206,13 +206,17 @@ export default class Mock {
   ): this {
     const lastWrapper = this._mainWrapper;
 
-    const whenArgsFunctor = (source: FunctionImpl) => (...args: any[]): any => {
-      if (predicate(...args)) {
-        return implementation(...args);
-      }
+    const whenArgsFunctor =
+      (source: FunctionImpl) =>
+      (...args: any[]): any => {
+        if (predicate(...args)) {
+          return implementation(...args);
+        }
 
-      return lastWrapper ? lastWrapper(source, this)(...args) : source(...args);
-    };
+        return lastWrapper
+          ? lastWrapper(source, this)(...args)
+          : source(...args);
+      };
 
     this.wrap(whenArgsFunctor);
     return this;
@@ -294,13 +298,14 @@ export default class Mock {
       const handler = wrapper(wrappedHandler, source, this);
 
       const lostMethod = requiredHandlerMethods.find(
-        method => !(method in handler)
+        (method) => !(method in handler)
       );
 
       if (lostMethod !== undefined) {
         throw TypeError(
-          `handler.${lostMethod}() is required but lost in result of middleware ${wrapper.name ||
-            wrapper}`
+          `handler.${lostMethod}() is required but lost in result of middleware ${
+            wrapper.name || wrapper
+          }`
         );
       }
 
@@ -431,7 +436,7 @@ export default class Mock {
             result = isProxifiable(result)
               ? this._getProxified(this._proxifiedValues, result)
               : result instanceof Promise
-              ? result.then(r =>
+              ? result.then((r) =>
                   isProxifiable(r)
                     ? this._getProxified(this._proxifiedValues, r)
                     : r
@@ -463,7 +468,7 @@ export default class Mock {
         );
       },
 
-      getPrototypeOf: double =>
+      getPrototypeOf: (double) =>
         typeof source === 'object'
           ? // object double has prototype default to null, if not set by user
             // return prototype of source
@@ -473,7 +478,7 @@ export default class Mock {
       has: (double, prop) =>
         Reflect.has(double, prop) || Reflect.has(source, prop),
 
-      ownKeys: double => [
+      ownKeys: (double) => [
         ...new Set(
           Reflect.ownKeys(double).concat(Reflect.ownKeys(source))
         ).values(),

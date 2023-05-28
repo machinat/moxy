@@ -1,4 +1,4 @@
-import { Proxifiable } from '../types';
+import type { Proxifiable } from '../types.js';
 
 const isProxifiable = (target: any): target is Proxifiable =>
   (typeof target === 'object' &&

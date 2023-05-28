@@ -1,5 +1,5 @@
-import factory from '../factory';
-import Mock from '../mock';
+import factory from '../factory.js';
+import Mock from '../mock.js';
 
 it('returns a moxied target', () => {
   const target = { foo: 'bar' };

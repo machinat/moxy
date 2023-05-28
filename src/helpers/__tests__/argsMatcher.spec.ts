@@ -1,5 +1,5 @@
-import Mock from '../../mock';
-import { equal, beginWith, endWith, nthIs } from '../argsMatcher';
+import Mock from '../../mock.js';
+import { equal, beginWith, endWith, nthIs } from '../argsMatcher.js';
 
 describe('equal', () => {
   test.each`

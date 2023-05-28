@@ -1,7 +1,7 @@
-import { PropMockMapping } from '../types';
+import type { PropMockMapping } from '../types.js';
 
-export const clearPropMockMapping = (mapping: PropMockMapping): void => {
-  Reflect.ownKeys(mapping).forEach(k => {
+const clearPropMockMapping = (mapping: PropMockMapping): void => {
+  Reflect.ownKeys(mapping).forEach((k) => {
     mapping[k].clear();
   });
 };

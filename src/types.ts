@@ -1,5 +1,7 @@
-import Mock from './mock';
+import type Mock from './mock.js';
+import { IS_MOXY } from './constant.js';
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 export type Proxifiable = object | Function;
 
 export type FunctionImpl = (...args: any[]) => unknown;
@@ -10,8 +12,8 @@ export type WrapImplFunctor = (
 ) => FunctionImpl;
 
 export type Moxy<T> = T & { mock: Mock } & {
-    [K in keyof T]: T[K] extends FunctionImpl ? T[K] & { mock: Mock } : unknown
-  };
+  [K in keyof T]: T[K] extends FunctionImpl ? T[K] & { mock: Mock } : unknown;
+};
 
 export interface PropMockMapping {
   [k: string | number | symbol]: Mock;
@@ -38,8 +40,6 @@ export interface MockOptions {
 export type MockOptionsInput = { [O in keyof MockOptions]?: MockOptions[O] };
 
 export type ProxifiedCache = Map<Proxifiable, Proxifiable>;
-
-export const IS_MOXY = Symbol('is_moxy');
 
 export interface IsMoxyWildcard {
   [IS_MOXY]?: true;

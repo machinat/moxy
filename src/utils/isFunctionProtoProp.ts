@@ -1,4 +1,4 @@
-import { Proxifiable } from '../types';
+import type { Proxifiable } from '../types.js';
 
 const isFunctionProtoProp = (
   source: Proxifiable,

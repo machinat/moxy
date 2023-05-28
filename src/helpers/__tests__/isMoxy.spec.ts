@@ -1,6 +1,6 @@
-import moxy from '../..';
-import Mock from '../../mock';
-import isMoxy from '../isMoxy';
+import moxy from '../../index.js';
+import Mock from '../../mock.js';
+import isMoxy from '../isMoxy.js';
 
 it('tells if a target is moxied', () => {
   function fn() {}

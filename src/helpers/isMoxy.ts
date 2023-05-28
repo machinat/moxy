@@ -1,4 +1,5 @@
-import { Proxifiable, IsMoxyWildcard, IS_MOXY } from '../types';
+import { IS_MOXY } from '../constant.js';
+import type { Proxifiable, IsMoxyWildcard } from '../types.js';
 
 /** Check if the target is mocked by moxy */
 const isMoxy = (moxied: Proxifiable): boolean =>

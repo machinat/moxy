@@ -1,5 +1,5 @@
-import moxy from '..';
-import Call from '../call';
+import moxy from '../index.js';
+import Call from '../call.js';
 
 it('is a function', () => {
   expect(typeof moxy).toBe('function');
@@ -48,7 +48,7 @@ describe('empty mock', () => {
       spy('bar', 'baz'),
       spy.call(null, 'hello'),
       spy.apply({}, ['world']),
-    ].forEach(r => {
+    ].forEach((r) => {
       expect(r).toBe(undefined);
     });
 

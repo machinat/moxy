@@ -1,6 +1,6 @@
-import moxy from '../..';
-import isMoxy from '../isMoxy';
-import trackCurriedFunction from '../trackCurriedFunction';
+import moxy from '../../index.js';
+import isMoxy from '../isMoxy.js';
+import trackCurriedFunction from '../trackCurriedFunction.js';
 
 it('work with mock.wrap()', () => {
   const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c);
@@ -47,9 +47,17 @@ test('multi args', () => {
   const calls = addMultipled3.mock.getCalls();
 
   expect(calls.length).toBe(2);
-  expect(calls[0].args).toEqual([[1, 2], [3, 4], [5, 6]]);
+  expect(calls[0].args).toEqual([
+    [1, 2],
+    [3, 4],
+    [5, 6],
+  ]);
   expect(calls[0].result).toBe(44);
-  expect(calls[1].args).toEqual([[7, 8], [9, 10], [11, 12]]);
+  expect(calls[1].args).toEqual([
+    [7, 8],
+    [9, 10],
+    [11, 12],
+  ]);
   expect(calls[1].result).toBe(278);
 });
 

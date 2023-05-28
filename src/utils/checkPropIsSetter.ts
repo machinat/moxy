@@ -3,13 +3,13 @@ const checkPropIsSetter = (
   prop: string | symbol | number
 ): boolean => {
   let target = obj;
-  // eslint-disable-next-line no-cond-assign
   do {
     const desc = Object.getOwnPropertyDescriptor(target, prop);
 
     if (desc !== undefined) {
       return desc.set !== undefined;
     }
+    // eslint-disable-next-line no-cond-assign
   } while ((target = Object.getPrototypeOf(target)) !== null);
 
   return false;

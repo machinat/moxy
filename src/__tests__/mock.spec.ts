@@ -1,8 +1,8 @@
-import moxy from '..';
-import Call from '../call';
-import Mock from '../mock';
-import isMoxy from '../helpers/isMoxy';
-import trackCurriedFunction from '../helpers/trackCurriedFunction';
+import moxy from '../index.js';
+import Call from '../call.js';
+import Mock from '../mock.js';
+import isMoxy from '../helpers/isMoxy.js';
+import trackCurriedFunction from '../helpers/trackCurriedFunction.js';
 
 declare let global: { Proxy: any };
 
@@ -158,7 +158,12 @@ describe(`Faking methods
     expect(mock.wrap(() => () => 1)).toBe(mock);
     expect(mock.wrapOnce(() => () => 1)).toBe(mock);
     expect(mock.fake(() => 1)).toBe(mock);
-    expect(mock.fakeWhenArgs((x: any) => !!x, () => 1)).toBe(mock);
+    expect(
+      mock.fakeWhenArgs(
+        (x: any) => !!x,
+        () => 1
+      )
+    ).toBe(mock);
     expect(mock.fakeOnce(() => 1)).toBe(mock);
     expect(mock.fakeReturnValue(1)).toBe(mock);
     expect(mock.fakeReturnValueOnce(1)).toBe(mock);
@@ -278,10 +283,7 @@ describe(`Faking methods
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(0);
 
-    mock
-      .fake(impletation)
-      .fakeOnce(impletation1)
-      .fakeOnce(impletation2);
+    mock.fake(impletation).fakeOnce(impletation1).fakeOnce(impletation2);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(3);
     expect(moxied()).toBe(1);
@@ -311,10 +313,7 @@ describe(`Faking methods
     expect(moxied()).toBe(1);
     expect(moxied()).toBe(0);
 
-    mock
-      .fakeReturnValue(1)
-      .fakeReturnValueOnce(2)
-      .fakeReturnValueOnce(3);
+    mock.fakeReturnValue(1).fakeReturnValueOnce(2).fakeReturnValueOnce(3);
     expect(moxied()).toBe(2);
     expect(moxied()).toBe(3);
     expect(moxied()).toBe(1);
@@ -549,7 +548,7 @@ describe('.handle()', () => {
   });
 
   it('compose options.middlewares to get the final proxy handler', () => {
-    const copy = (x: Record<string, any>) => Object.assign({}, x);
+    const copy = (x: Record<string, any>) => ({ ...x });
     const middlewares = [moxy(copy), moxy(copy), moxy(copy)];
 
     const mock = new Mock({ middlewares });
@@ -584,9 +583,9 @@ describe('.handle()', () => {
   it('throw if original method lost in middleware result', () => {
     const methodsShoudContain = Object.keys(new Mock().handle({}));
 
-    methodsShoudContain.forEach(method => {
+    methodsShoudContain.forEach((method) => {
       const middleware = (handler: ProxyHandler<any>) => {
-        const incomplete = Object.assign({}, handler);
+        const incomplete = { ...handler };
         delete (incomplete as Record<string, unknown>)[method];
         return incomplete;
       };

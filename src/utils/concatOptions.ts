@@ -1,4 +1,4 @@
-import { MockOptionsInput } from '../types';
+import { MockOptionsInput } from '../types.js';
 
 const concatIfBothExists = <T>(
   base: undefined | null | T[],

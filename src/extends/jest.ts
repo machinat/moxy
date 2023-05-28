@@ -1,13 +1,13 @@
-import moxy from '..';
-import Mock from '../mock';
-import Call from '../call';
-import { ProxyMiddleware } from '../types';
+import moxy from '../index.js';
+import Mock from '../mock.js';
+import Call from '../call.js';
+import { ProxyMiddleware } from '../types.js';
 
 Object.defineProperties(Mock.prototype, {
   calls: {
     get() {
       const mock = this as Mock;
-      return mock.getCalls().map(call => {
+      return mock.getCalls().map((call) => {
         const compatibleCall = [...call.args] as any[] & Call;
 
         Object.defineProperties(compatibleCall, {

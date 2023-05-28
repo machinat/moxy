@@ -1,5 +1,5 @@
-import Mock from '../mock';
-import { WrapImplFunctor, FunctionImpl } from '../types';
+import Mock from '../mock.js';
+import { WrapImplFunctor, FunctionImpl } from '../types.js';
 
 const wrapNextFunction = (
   nextValue: unknown,
@@ -60,7 +60,7 @@ const trackCurriedFunction = (
    * Depth of curried function calls to track. If ommited, track till returning
    * value is not a function. It's useful when `returnValue` is a function
    */
-  length: number = Infinity
+  length = Infinity
 ): WrapImplFunctor => {
   return (fn, mock) =>
     function mockCurriedFunction(this: FunctionImpl, ...args: any[]) {

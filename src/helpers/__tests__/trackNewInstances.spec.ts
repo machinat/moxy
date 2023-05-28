@@ -1,7 +1,7 @@
-import moxy, { Moxy } from '../..';
-import Mock from '../../mock';
-import Call from '../../call';
-import trackNewInstances from '../trackNewInstances';
+import moxy, { Moxy } from '../../index.js';
+import Mock from '../../mock.js';
+import Call from '../../call.js';
+import trackNewInstances from '../trackNewInstances.js';
 
 it('work with mock.wrap()', () => {
   const instanceMock = new Mock();
