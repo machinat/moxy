@@ -1,4 +1,4 @@
-import moxy from '../..';
+import { moxy } from '../..';
 import isMoxy from '../isMoxy';
 import trackCurriedFunction from '../trackCurriedFunction';
 

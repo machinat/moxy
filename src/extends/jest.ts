@@ -1,4 +1,4 @@
-import moxy from '..';
+import { moxy, setDefaultOptions } from '..';
 import Mock from '../mock';
 import Call from '../call';
 import { ProxyMiddleware } from '../types';
@@ -81,6 +81,6 @@ const attachJestFnProperties: ProxyMiddleware = (handler, source) => ({
   },
 });
 
-moxy.setDefaultOptions({
+setDefaultOptions({
   middlewares: [attachJestFnProperties],
 });

@@ -46,7 +46,7 @@ module.exports = {
 ### Usage
 
 ```js
-import moxy from '@moxyjs/moxy';
+import { moxy } from '@moxyjs/moxy';
 
 const spy = moxy(/* anything to mock */);
 
@@ -184,7 +184,7 @@ A function call record
 Check whether a value is moxied. Return a `boolean`. For example:
 
 ```js
-import moxy, { isMoxy } from '@moxyjs/moxy';
+import { moxy, isMoxy } from '@moxyjs/moxy';
 
 isMoxy({}); // false
 isMoxy(moxy()); // true
@@ -240,7 +240,7 @@ obj.foo.bar.baz.hello(); // 'there'
 This is useful to mock all instances of a class:
 
 ```js
-import moxy, { Mock, trackNewInstances } from '@moxyjs/moxy';
+import { moxy, Mock, trackNewInstances } from '@moxyjs/moxy';
 
 const fooMock = new Mock();
 const Foo = moxy(
@@ -261,7 +261,7 @@ new Foo().bar(); // 'zaq'
 Or to mock a curried function:
 
 ```js
-import moxy, { trackCurriedFunction } from '@moxyjs/moxy';
+import { moxy, trackCurriedFunction } from '@moxyjs/moxy';
 
 const curriedFn = moxy(
   () => () => () => '🍛'

@@ -1,4 +1,4 @@
-import moxy, { Moxy } from '../..';
+import { moxy, Moxy } from '../..';
 import Mock from '../../mock';
 import Call from '../../call';
 import trackNewInstances from '../trackNewInstances';

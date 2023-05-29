@@ -1,5 +1,5 @@
 import '../jest';
-import moxy from '../..';
+import { moxy } from '../..';
 
 function addAll(...args: number[]): number {
   return args.reduce((acc, cur) => acc + cur, 0);

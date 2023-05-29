@@ -1,4 +1,4 @@
-import moxy from '..';
+import { moxy } from '..';
 import Call from '../call';
 import Mock from '../mock';
 import isMoxy from '../helpers/isMoxy';

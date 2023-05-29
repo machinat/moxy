@@ -11,7 +11,8 @@
     "build": "tsc -p ./tsconfig.build.json",
     "clean": "rm -r ./lib",
     "prepare": "npm run build",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint . --ext .ts"
   },
   "author": {
     "name": "Patrick Liu",
