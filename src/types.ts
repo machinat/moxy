@@ -5,6 +5,7 @@ import { IS_MOXY } from './constant.js';
 export type Proxifiable = object | Function;
 
 export type FunctionImpl = (...args: any[]) => unknown;
+export type ConstructorImpl = { new (...args: any[]): unknown };
 
 export type WrapImplFunctor = (
   original: FunctionImpl,
@@ -12,7 +13,11 @@ export type WrapImplFunctor = (
 ) => FunctionImpl;
 
 export type Moxy<T> = T & { mock: Mock } & {
-  [K in keyof T]: T[K] extends FunctionImpl ? T[K] & { mock: Mock } : unknown;
+  [K in keyof T]: T[K] extends FunctionImpl
+    ? T[K] & { mock: Mock }
+    : T[K] extends ConstructorImpl
+    ? T[K] & { mock: Mock }
+    : T[K];
 };
 
 export interface PropMockMapping {
