@@ -389,7 +389,7 @@ describe('.clear()', () => {
     expect(r2).not.toBe(r1);
   });
 
-  it('clear mocks of the properties included', () => {
+  it('also clear proxified properties', () => {
     const mock = new Mock();
     const obj: any = mock.proxify({ foo: () => 'bar' });
 
@@ -481,7 +481,7 @@ describe('.reset()', () => {
     expect(fn()).not.toBe(returned1);
   });
 
-  it('clean cache of proxified props', () => {
+  it('also reset proxified properties', () => {
     const mock = new Mock();
     const obj: any = mock.proxify({ foo: () => 'bar' });
 
@@ -494,7 +494,7 @@ describe('.reset()', () => {
 
     mock.reset();
     expect(obj.foo()).toBe('bar');
-    expect(obj.foo).not.toBe(moxiedFoo);
+    expect(obj.foo).toBe(moxiedFoo);
   });
 
   it('empty setterMocks and getterMocks', () => {
