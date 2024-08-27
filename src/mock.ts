@@ -81,6 +81,7 @@ export default class Mock {
       : [];
 
     this._proxifiedDoubles = new Map();
+    this._proxifiedProps = new Map();
 
     this.reset();
   }
@@ -161,7 +162,11 @@ export default class Mock {
     this._initCalls();
 
     this._proxifiedValues = new Map();
-    this._proxifiedProps = new Map();
+
+    // reset also mock of proxified props
+    for (const proxiedProp of this._proxifiedProps.values()) {
+      (proxiedProp as MockAccossorWildcard)[this.options.accessKey].reset();
+    }
 
     this.getterMocks = {};
     this.setterMocks = {};
