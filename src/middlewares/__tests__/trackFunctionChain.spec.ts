@@ -1,10 +1,10 @@
 import moxy from '../../index.js';
-import isMoxy from '../isMoxy.js';
-import trackCurriedFunction from '../trackCurriedFunction.js';
+import trackFunctionChain from '../trackFunctionChain.js';
 
-it('work with mock.wrap()', () => {
-  const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c);
-  add3.mock.wrap(trackCurriedFunction());
+it('track the the whole training function calls', () => {
+  const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c, {
+    middlewares: [trackFunctionChain()],
+  });
 
   expect(add3(1)(2)(3)).toBe(6);
   expect(add3(4)(5)(6)).toBe(15);
@@ -19,9 +19,10 @@ it('work with mock.wrap()', () => {
 });
 
 it('fake final value', () => {
-  const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c);
-
-  add3.mock.wrap(trackCurriedFunction(7));
+  const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c, {
+    middlewares: [trackFunctionChain(7)],
+  });
+  add3.mock.fake(() => () => () => 7);
 
   expect(add3(1)(2)(3)).toBe(7);
 
@@ -36,10 +37,9 @@ test('multi args', () => {
   const addMultipled3 = moxy(
     // prettier-ignore
     (a: number, b: number) => (c: number, d: number) => (e: number, f: number) =>
-      a * b + c * d + e * f
+      a * b + c * d + e * f,
+    { middlewares: [trackFunctionChain()] }
   );
-
-  addMultipled3.mock.wrap(trackCurriedFunction());
 
   expect(addMultipled3(1, 2)(3, 4)(5, 6)).toBe(44);
   expect(addMultipled3(7, 8)(9, 10)(11, 12)).toBe(278);
@@ -62,17 +62,15 @@ test('multi args', () => {
 });
 
 it('set curried function depth', () => {
-  const seagullFn = moxy((a: string) => (b: string) => () => a + b);
+  const seagullFn = moxy(
+    (a: string) => (b: string) => (c: string) => a + b + c,
+    { middlewares: [trackFunctionChain(2)] }
+  );
 
-  const myFn = () => 'mineminemineminemine';
-  seagullFn.mock.wrap(trackCurriedFunction(myFn, 2));
-
-  const resultFn = seagullFn('mine')('mine');
-  expect(resultFn).toBe(myFn);
-  expect(isMoxy(resultFn)).toBe(false);
+  expect(seagullFn('mine')('mine')('mine')).toBe('mineminemine');
 
   const calls = seagullFn.mock.getCalls();
   expect(calls.length).toBe(1);
   expect(calls[0].args).toEqual([['mine'], ['mine']]);
-  expect(calls[0].result).toBe(myFn);
+  expect(calls[0].result).toBeInstanceOf(Function);
 });

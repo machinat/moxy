@@ -1,14 +1,17 @@
 import moxy, { Moxy } from '../../index.js';
 import Mock from '../../mock.js';
 import Call from '../../call.js';
-import trackNewInstances from '../trackNewInstances.js';
+import trackNewInstances from '../../middlewares/trackNewInstances.js';
 
-it('work with mock.wrap()', () => {
+it('track new instances', () => {
   const instanceMock = new Mock();
 
-  class Foo { someMethod(_: number) { } } // eslint-disable-line
-  const MoxiedFoo = moxy(Foo);
-  MoxiedFoo.mock.wrap(trackNewInstances(instanceMock));
+  class Foo {
+    someMethod(_: number) {}
+  } // eslint-disable-line
+  const MoxiedFoo = moxy(Foo, {
+    middlewares: [trackNewInstances(instanceMock)],
+  });
 
   const foo1 = new MoxiedFoo() as Moxy<Foo>;
   expect(foo1.mock).toBe(instanceMock);
@@ -27,9 +30,12 @@ it('work with mock.wrap()', () => {
 });
 
 it('track with class mock if mock param omitted', () => {
-  class Foo { someMethod(_: number) { } } // eslint-disable-line
-  const MoxiedFoo = moxy(Foo);
-  MoxiedFoo.mock.wrap(trackNewInstances());
+  class Foo {
+    someMethod(_: number) {}
+  } // eslint-disable-line
+  const MoxiedFoo = moxy(Foo, {
+    middlewares: [trackNewInstances()],
+  });
 
   const foo1 = new MoxiedFoo() as Moxy<Foo>;
   expect(foo1.mock).toBe(MoxiedFoo.mock);

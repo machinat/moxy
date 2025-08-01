@@ -2,7 +2,7 @@ import moxy from '../index.js';
 import Call from '../call.js';
 import Mock from '../mock.js';
 import isMoxy from '../helpers/isMoxy.js';
-import trackCurriedFunction from '../helpers/trackCurriedFunction.js';
+import trackFunctionChain from '../middlewares/trackFunctionChain.js';
 
 declare let global: { Proxy: any };
 
@@ -181,8 +181,9 @@ describe(`Faking methods
     const source = () => 0;
     const moxied: any = mock.proxify(source);
 
-    const wrapper = moxy(() => () => 1);
-    wrapper.mock.wrap(trackCurriedFunction());
+    const wrapper = moxy(() => () => 1, {
+      middlewares: [trackFunctionChain()],
+    });
 
     mock.wrap(wrapper);
 
@@ -205,10 +206,12 @@ describe(`Faking methods
     const source = () => 0;
     const moxied: any = mock.proxify(source);
 
-    const wrapper1 = moxy(() => () => 1);
-    const wrapper2 = moxy(() => () => 2);
-    wrapper1.mock.wrap(trackCurriedFunction());
-    wrapper2.mock.wrap(trackCurriedFunction());
+    const wrapper1 = moxy(() => () => 1, {
+      middlewares: [trackFunctionChain()],
+    });
+    const wrapper2 = moxy(() => () => 2, {
+      middlewares: [trackFunctionChain()],
+    });
 
     mock.wrapOnce(wrapper1);
     expect(moxied(1, 2, 3)).toBe(1);
@@ -895,11 +898,11 @@ describe('.handle()', () => {
       moxied._foo = 'baz';
       expect(moxied.foo).toBe('baz');
 
-      moxied.mock
-        .getter('foo')
-        .fake(function getFooled(this: { _fool: string }) {
-          return this._fool;
-        });
+      moxied.mock.getter('foo').fake(function getFooled(this: {
+        _fool: string;
+      }) {
+        return this._fool;
+      });
       expect(moxied.foo).toBe('barz');
     });
 
@@ -1006,11 +1009,12 @@ describe('.handle()', () => {
       expect(moxied._foo).toBe('baz');
       expect(source._foo).toBe('bar');
 
-      moxied.mock
-        .setter('foo')
-        .fake(function setFool(this: { _fool: string }, val: string) {
-          this._fool = val;
-        });
+      moxied.mock.setter('foo').fake(function setFool(
+        this: { _fool: string },
+        val: string
+      ) {
+        this._fool = val;
+      });
 
       moxied.foo = 'barz';
       expect(moxied._fool).toBe('barz');
