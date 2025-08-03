@@ -5,6 +5,7 @@ export { default as factory } from './factory.js';
 export { default as Mock } from './mock.js';
 export { default as Call } from './call.js';
 export * from './helpers/index.js';
+export * from './middlewares/index.js';
 export { Moxy } from './types.js';
 
 const defaultOptions = {};
