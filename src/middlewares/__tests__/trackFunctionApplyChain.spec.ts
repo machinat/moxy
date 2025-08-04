@@ -1,9 +1,9 @@
 import moxy from '../../index.js';
-import trackFunctionChain from '../trackFunctionChain.js';
+import trackFunctionApplyChain from '../trackFunctionApplyChain.js';
 
 it('track the the whole training function calls', () => {
   const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c, {
-    middlewares: [trackFunctionChain()],
+    middlewares: [trackFunctionApplyChain()],
   });
 
   expect(add3(1)(2)(3)).toBe(6);
@@ -20,7 +20,7 @@ it('track the the whole training function calls', () => {
 
 it('fake final value', () => {
   const add3 = moxy((a: number) => (b: number) => (c: number) => a + b + c, {
-    middlewares: [trackFunctionChain(7)],
+    middlewares: [trackFunctionApplyChain(7)],
   });
   add3.mock.fake(() => () => () => 7);
 
@@ -38,7 +38,7 @@ test('multi args', () => {
     // prettier-ignore
     (a: number, b: number) => (c: number, d: number) => (e: number, f: number) =>
       a * b + c * d + e * f,
-    { middlewares: [trackFunctionChain()] }
+    { middlewares: [trackFunctionApplyChain()] }
   );
 
   expect(addMultipled3(1, 2)(3, 4)(5, 6)).toBe(44);
@@ -64,7 +64,7 @@ test('multi args', () => {
 it('set curried function depth', () => {
   const seagullFn = moxy(
     (a: string) => (b: string) => (c: string) => a + b + c,
-    { middlewares: [trackFunctionChain(2)] }
+    { middlewares: [trackFunctionApplyChain(2)] }
   );
 
   expect(seagullFn('mine')('mine')('mine')).toBe('mineminemine');

@@ -1,2 +1,2 @@
-export { default as trackFunctionChain } from './trackFunctionChain.js';
-export { default as trackNewInstances } from './trackNewInstances.js';
+export { default as trackFunctionApplyChain } from './trackFunctionApplyChain.js';
+export { default as trackConstructedInstances } from './trackConstructedInstances.js';
