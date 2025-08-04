@@ -16,7 +16,7 @@ const wrapNextFunction = (
     const call = mock.getCalls().find(({ result }) => result === nextValue);
     if (!call) {
       throw new Error(
-        'trackFunctionChain: No call found for the next function. Ensure the function has been called before wrapping.'
+        'trackFunctionApplyChain: No call found for the next function. Ensure the function has been called before wrapping.'
       );
     }
     call.args[depth] = args;
@@ -33,7 +33,7 @@ const wrapNextFunction = (
  * ```
  * const curriedFn = moxy(
  *   a => b => c => a + b + c,
- *   { middlewares: [trackFunctionChain()] }
+ *   { middlewares: [trackFunctionApplyChain()] }
  * );
  *
  * curriedFn(1)(2)(3);
@@ -43,17 +43,14 @@ const wrapNextFunction = (
  * expect(curriedFn).toHaveBeenNthCalledWith(2, [4], [5], [6]);
  * ```
  */
-const trackFunctionChain = (
+const trackFunctionApplyChain = (
   /**
    * Depth of curried function calls to track. If ommited, track till returning
    * value is not a function. It's useful when `returnValue` is a function
    */
-  trackDepth: number = Infinity
+  trackDepth = Infinity
 ): ProxyMiddleware => {
   return (handlers, fn, mock) => {
-    if (typeof fn !== 'function') {
-      throw new TypeError('trackFunctionChain can only be used with functions');
-    }
     return {
       ...handlers,
       apply: (target, thisArg, args) => {
@@ -64,7 +61,7 @@ const trackFunctionChain = (
         const initialCall = calls[calls.length - 1];
         if (!initialCall) {
           throw new Error(
-            'trackFunctionChain: No initial call found. Ensure the function has been called before wrapping.'
+            'trackFunctionApplyChain: No initial call found. Ensure the function has been called before wrapping.'
           );
         }
 
@@ -75,4 +72,4 @@ const trackFunctionChain = (
   };
 };
 
-export default trackFunctionChain;
+export default trackFunctionApplyChain;

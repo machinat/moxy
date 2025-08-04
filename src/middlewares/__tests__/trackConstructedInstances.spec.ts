@@ -1,16 +1,17 @@
 import moxy, { Moxy } from '../../index.js';
 import Mock from '../../mock.js';
 import Call from '../../call.js';
-import trackNewInstances from '../../middlewares/trackNewInstances.js';
+import trackConstructedInstances from '../trackConstructedInstances.js';
 
 it('track new instances', () => {
   const instanceMock = new Mock();
 
   class Foo {
+    // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
     someMethod(_: number) {}
-  } // eslint-disable-line
+  }
   const MoxiedFoo = moxy(Foo, {
-    middlewares: [trackNewInstances(instanceMock)],
+    middlewares: [trackConstructedInstances(instanceMock)],
   });
 
   const foo1 = new MoxiedFoo() as Moxy<Foo>;
@@ -31,10 +32,11 @@ it('track new instances', () => {
 
 it('track with class mock if mock param omitted', () => {
   class Foo {
+    // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-unused-vars
     someMethod(_: number) {}
-  } // eslint-disable-line
+  }
   const MoxiedFoo = moxy(Foo, {
-    middlewares: [trackNewInstances()],
+    middlewares: [trackConstructedInstances()],
   });
 
   const foo1 = new MoxiedFoo() as Moxy<Foo>;
