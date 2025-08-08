@@ -240,7 +240,7 @@ obj.foo.bar.baz.hello(); // 'there'
 This is useful to mock all instances of a class:
 
 ```js
-import moxy, { Mock, trackNewInstances } from '@moxyjs/moxy';
+import moxy, { Mock, trackConstructedInstances } from '@moxyjs/moxy';
 
 const fooMock = new Mock();
 const Foo = moxy(
@@ -248,9 +248,9 @@ const Foo = moxy(
     bar() {
       return 'baz';
     }
-  }
+  },
+  { middlewares: [trackConstructedInstances(fooMock)] } // track all instances created by Foo
 );
-Foo.mock.wrap(trackNewInstances(fooMock));
 
 new Foo().bar(); // 'baz'
 
@@ -261,18 +261,16 @@ new Foo().bar(); // 'zaq'
 Or to mock a curried function:
 
 ```js
-import moxy, { trackCurriedFunction } from '@moxyjs/moxy';
+import moxy, { trackFunctionApplyChain } from '@moxyjs/moxy';
 
 const curriedFn = moxy(
-  () => () => () => '🍛'
+  () => () => () => '🍛',
+  { middlewares: [trackFunctionApplyChain()] },
 );
-curriedFn.mock.wrap(trackCurriedFunction());
 
 curriedFn('foo')('bar')('baz'); // '🍛'
 
-expect(mock).toHaveBeenNthCalledWith(1, 'foo');
-expect(mock).toHaveBeenNthCalledWith(2, 'bar');
-expect(mock).toHaveBeenNthCalledWith(3, 'baz');
+expect(mock).toHaveBeenNthCalledWith([['foo'], ['bar'], ['baz']]);
 ```
 
 ##### Proxy Handle Middleware
